@@ -216,6 +216,28 @@ def llm_score():
     print(f"LLM-scored {n} job(s).")
 
 
+def pending():
+    """Dump jobs awaiting LLM scoring as JSON - for manual scoring (e.g. by
+    Claude Code itself in a chat session) when no ANTHROPIC_API_KEY is set."""
+    import json as _json
+    from .llm_scoring import pending_jobs
+    rows = [dict(r) for r in pending_jobs()]
+    print(_json.dumps(rows, indent=2, ensure_ascii=False))
+
+
+def apply_llm_scores():
+    """Read a JSON array of {fingerprint, match_score, verdict, strengths,
+    gaps, tailored_bullets, reasoning} from stdin and write them to the DB -
+    the write side of manual scoring, matching pending_jobs()'s output."""
+    import json as _json
+    import sys as _sys
+    from .llm_scoring import apply_llm_result
+    results = _json.loads(_sys.stdin.read())
+    for r in results:
+        apply_llm_result(r["fingerprint"], r)
+    print(f"Applied {len(results)} LLM score(s).")
+
+
 def digest():
     from .digest import send_digest
     send_digest()
@@ -230,12 +252,14 @@ def run():
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("command", choices=["scan", "stats", "llm-score", "digest", "run"])
+    p.add_argument("command", choices=["scan", "stats", "llm-score", "pending", "apply-llm-scores", "digest", "run"])
     args = p.parse_args()
     {
         "scan": scan,
         "stats": stats,
         "llm-score": llm_score,
+        "pending": pending,
+        "apply-llm-scores": apply_llm_scores,
         "digest": digest,
         "run": run,
     }[args.command]()

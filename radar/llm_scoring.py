@@ -53,6 +53,40 @@ def _system_prompt():
     )
 
 
+def pending_jobs(limit=None):
+    """Jobs at/above RULE_SCORE_FLOOR that haven't been LLM-scored yet."""
+    init()
+    c = con()
+    rows = c.execute(
+        "SELECT * FROM jobs WHERE llm_score IS NULL AND rule_score >= ? ORDER BY rule_score DESC",
+        (RULE_SCORE_FLOOR,),
+    ).fetchall()
+    c.close()
+    return rows[:limit] if limit else rows
+
+
+def apply_llm_result(fingerprint, result):
+    """Write one evaluation (same shape as RESULT_SCHEMA) to the DB. Used by
+    both the API-calling path below and manual scoring (e.g. done directly
+    by Claude Code in a chat session against a Claude Pro/Max plan, with no
+    separate API key or spend - see `pending`/`apply-llm-scores` in cli.py)."""
+    c = con()
+    c.execute(
+        """UPDATE jobs SET
+               llm_score = ?, llm_verdict = ?, llm_reasoning = ?, llm_tailored_bullets = ?,
+               strengths = ?, gaps = ?
+           WHERE fingerprint = ?""",
+        (
+            result["match_score"], result["verdict"], result["reasoning"],
+            "|".join(result["tailored_bullets"]),
+            "|".join(result["strengths"]), "|".join(result["gaps"]),
+            fingerprint,
+        ),
+    )
+    c.commit()
+    c.close()
+
+
 def evaluate_with_llm(job_row, client, system_prompt):
     user_content = (
         f"JOB POSTING\nTitle: {job_row['title']}\nCompany: {job_row['company']}\n"
@@ -78,15 +112,7 @@ def score_new_jobs(limit=None):
         print("WARN llm_scoring: ANTHROPIC_API_KEY not set, skipping LLM scoring")
         return 0
 
-    init()
-    c = con()
-    rows = c.execute(
-        "SELECT * FROM jobs WHERE llm_score IS NULL AND rule_score >= ? ORDER BY rule_score DESC",
-        (RULE_SCORE_FLOOR,),
-    ).fetchall()
-    if limit:
-        rows = rows[:limit]
-
+    rows = pending_jobs(limit)
     client = anthropic.Anthropic()
     system_prompt = _system_prompt()
 
@@ -97,21 +123,7 @@ def score_new_jobs(limit=None):
         except Exception as e:
             print("WARN llm_scoring", row["fingerprint"], e)
             continue
-
-        c.execute(
-            """UPDATE jobs SET
-                   llm_score = ?, llm_verdict = ?, llm_reasoning = ?, llm_tailored_bullets = ?,
-                   strengths = ?, gaps = ?
-               WHERE fingerprint = ?""",
-            (
-                result["match_score"], result["verdict"], result["reasoning"],
-                "|".join(result["tailored_bullets"]),
-                "|".join(result["strengths"]), "|".join(result["gaps"]),
-                row["fingerprint"],
-            ),
-        )
-        c.commit()
+        apply_llm_result(row["fingerprint"], result)
         scored += 1
 
-    c.close()
     return scored
