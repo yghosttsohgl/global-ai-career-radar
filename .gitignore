@@ -1,0 +1,6 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+# data/jobs.sqlite3 is intentionally tracked - GitHub Actions commits it back
+# after each scan so first_seen/notified_at persist across scheduled runs.
