@@ -74,7 +74,7 @@ def score_new_jobs(limit=None):
     """LLM-score jobs at/above RULE_SCORE_FLOOR that haven't been LLM-scored yet.
     Returns the number of jobs scored. Safe to call with no API key configured
     (prints a warning and does nothing) so `run` still completes locally."""
-    if "ANTHROPIC_API_KEY" not in os.environ:
+    if not os.environ.get("ANTHROPIC_API_KEY"):
         print("WARN llm_scoring: ANTHROPIC_API_KEY not set, skipping LLM scoring")
         return 0
 

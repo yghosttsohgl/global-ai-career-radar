@@ -41,7 +41,7 @@ def _render_text(rows):
 
 
 def send_digest():
-    if "GMAIL_ADDRESS" not in os.environ or "GMAIL_APP_PASSWORD" not in os.environ:
+    if not os.environ.get("GMAIL_ADDRESS") or not os.environ.get("GMAIL_APP_PASSWORD"):
         print("WARN digest: GMAIL_ADDRESS/GMAIL_APP_PASSWORD not set, skipping digest")
         return 0
 
