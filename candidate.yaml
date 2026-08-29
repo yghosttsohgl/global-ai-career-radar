@@ -1,0 +1,31 @@
+sources:
+  - name: Anthropic Careers
+    type: greenhouse
+    board: anthropic
+    country: Japan
+    # Anthropic's board lists jobs worldwide; only keep postings whose office
+    # location mentions one of these (case-insensitive substring match).
+    location_filter: ["japan", "tokyo"]
+    enabled: true
+
+  - name: Sakana AI Careers
+    type: html_list
+    url: https://sakana.ai/careers/
+    country: Japan
+    location: Tokyo
+    # Only anchors matching this path are real job postings (excludes nav,
+    # the careers index itself, etc).
+    link_pattern: '^/careers/[a-z0-9-]+/?$'
+    enabled: true
+
+  - name: karriere.at AI Jobs
+    type: karriere_at
+    url: https://www.karriere.at/jobs/k%C3%BCnstliche-intelligenz/wien
+    country: Austria
+    enabled: true
+
+  - name: AI Austria Jobs
+    type: aiaustria
+    url: https://aiaustria.com/jobs
+    country: Austria
+    enabled: true

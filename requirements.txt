@@ -1,0 +1,6 @@
+beautifulsoup4>=4.12
+requests>=2.32
+pydantic>=2.7
+streamlit>=1.40
+anthropic>=0.60
+PyYAML>=6.0

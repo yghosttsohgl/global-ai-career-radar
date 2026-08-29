@@ -1,0 +1,38 @@
+name: Job Radar
+
+on:
+  schedule:
+    # 06:00 UTC ~= 07:00-08:00 Europe/Vienna depending on DST.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Scan sources, LLM-score, send digest
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+        run: python -m radar.cli run
+
+      - name: Commit updated job database
+        run: |
+          git config user.name "job-radar-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/jobs.sqlite3
+          git diff --cached --quiet || git commit -m "Update job database"
+          git push

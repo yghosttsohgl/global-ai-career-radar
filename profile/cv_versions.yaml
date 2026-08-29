@@ -1,0 +1,50 @@
+cv_versions:
+  - id: ai_llm_product
+    name: "AI / LLM Product"
+    emphasize:
+      - Baidu Product Manager
+      - LLM evaluation
+      - AI data pipelines
+      - speech models
+      - NLP
+      - product management
+
+  - id: ai_nlp_evaluation
+    name: "AI / NLP / Evaluation"
+    emphasize:
+      - LLM evaluation
+      - speech model evaluation
+      - NLP
+      - machine translation
+      - Waseda M.Eng.
+      - Python
+      - SQL
+
+  - id: technical_software
+    name: "Technical / Software"
+    emphasize:
+      - Python
+      - SQL
+      - APIs
+      - testing
+      - Thoughtworks Software Developer
+      - automation
+
+  - id: japan_focused
+    name: "Japan-focused"
+    emphasize:
+      - Waseda University
+      - JLPT N1 (2018)
+      - AI / NLP
+      - Baidu
+      - Japanese reading/listening
+
+  - id: china_focused
+    name: "China-focused"
+    emphasize:
+      - Baidu
+      - Mandarin native
+      - AI / LLM
+      - NLP
+      - product management
+      - speech models
