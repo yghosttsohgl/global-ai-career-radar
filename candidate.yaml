@@ -73,8 +73,9 @@ sources:
   - name: Careerjet Japan
     type: careerjet
     country: Japan
-    # Aggregator API - covers Indeed JP, doda, etc. Needs CAREERJET_AFFID
-    # (free, https://partners.careerjet.com); skipped if unset.
+    # Aggregator API - covers Indeed JP, doda, etc. Needs CAREERJET_API_KEY
+    # (free Publisher account, careerjet.com/partners/register/as-publisher);
+    # skipped if unset.
     locale_code: en_JP
     location: Tokyo
     queries: ["software engineer", "qa engineer", "machine learning", "product manager",

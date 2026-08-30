@@ -199,24 +199,28 @@ def scan_adzuna(s):
 
 
 def scan_careerjet(s):
-    affid = os.environ.get("CAREERJET_AFFID")
-    if not affid:
-        print("WARN", s["name"], "CAREERJET_AFFID not set, skipping")
+    api_key = os.environ.get("CAREERJET_API_KEY")
+    if not api_key:
+        print("WARN", s["name"], "CAREERJET_API_KEY not set, skipping")
         return 0
     title_filter = [x.lower() for x in s.get("title_filter", [])]
     seen, saved = set(), 0
     for query in s.get("queries") or [s.get("keywords", "")]:
         params = {
             "locale_code": s["locale_code"], "keywords": query, "location": s.get("location", ""),
-            "affid": affid, "pagesize": 99, "sort": "date",
+            "page": 1, "page_size": 100, "sort": "date",
+            # Careerjet v4 requires these even for server-side use.
             "user_ip": os.environ.get("CAREERJET_USER_IP", "8.8.8.8"),
             "user_agent": HEADERS["User-Agent"],
         }
         try:
-            data = requests.get("https://public.api.careerjet.net/search", params=params,
-                                headers=HEADERS, timeout=TIMEOUT).json()
+            data = requests.get("https://search.api.careerjet.net/v4/query", params=params,
+                                auth=(api_key, ""), headers=HEADERS, timeout=TIMEOUT).json()
         except Exception as e:
             print("WARN", s["name"], query, e)
+            continue
+        if data.get("type") != "JOBS":
+            print("WARN", s["name"], query, data.get("message", data.get("type")))
             continue
         for job in data.get("jobs", []):
             url = job.get("url") or ""
