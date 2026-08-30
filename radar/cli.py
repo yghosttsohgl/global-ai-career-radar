@@ -261,7 +261,10 @@ def scan_jsearch(s):
             print("WARN", s["name"], query, e)
             continue
         if data.get("status") != "OK":
-            print("WARN", s["name"], query, data.get("error") or data.get("message") or data)
+            msg = data.get("error") or data.get("message") or data
+            if "does not exist" in str(msg) or "not subscribed" in str(msg):
+                msg = f"{msg}  (subscribe the RapidAPI key to the JSearch API's free Basic plan)"
+            print("WARN", s["name"], query, msg)
             continue
         for job in data.get("data", []):
             url = job.get("job_apply_link") or job.get("job_google_link") or ""
