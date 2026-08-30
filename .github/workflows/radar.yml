@@ -32,6 +32,7 @@ jobs:
           # Optional aggregator APIs - sources skip themselves if unset.
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           CAREERJET_API_KEY: ${{ secrets.CAREERJET_API_KEY }}
         run: python -m radar.cli run
 

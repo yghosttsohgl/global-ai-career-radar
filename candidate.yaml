@@ -70,18 +70,36 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  - name: JSearch Japan
+    type: jsearch
+    country: Japan
+    # Aggregator API via RapidAPI (wraps Google for Jobs -> Indeed, LinkedIn,
+    # Glassdoor...). Needs RAPIDAPI_KEY (free account, no website required);
+    # skipped if unset. Free tier is ~200 req/mo, so keep the query list short.
+    jsearch_country: jp
+    location: Japan
+    date_posted: month
+    queries:
+      - "software engineer in Tokyo, Japan"
+      - "QA engineer in Japan"
+      - "machine learning engineer in Japan"
+      - "product manager in Tokyo, Japan"
+      - "localization OR data engineer in Japan"
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  # Careerjet's Publisher program requires running a website that displays their
+  # listings - not viable for a private tool. Kept disabled as a template in
+  # case that changes. Needs CAREERJET_API_KEY.
   - name: Careerjet Japan
     type: careerjet
     country: Japan
-    # Aggregator API - covers Indeed JP, doda, etc. Needs CAREERJET_API_KEY
-    # (free Publisher account, careerjet.com/partners/register/as-publisher);
-    # skipped if unset.
     locale_code: en_JP
     location: Tokyo
     queries: ["software engineer", "qa engineer", "machine learning", "product manager",
               "data engineer", "localization", "devops", "salesforce"]
     title_filter: *tech_ops_titles
-    enabled: true
+    enabled: false
 
   - name: PayPay Careers
     type: greenhouse
@@ -157,6 +175,7 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  # Disabled - Careerjet needs a publisher website (see the Careerjet Japan note).
   - name: Careerjet Austria
     type: careerjet
     country: Austria
@@ -165,7 +184,7 @@ sources:
     queries: ["software", "qa test", "salesforce", "data", "machine learning",
               "projektmanagement", "produktmanagement", "devops", "business analyse"]
     title_filter: *tech_ops_titles
-    enabled: true
+    enabled: false
 
   - name: AI Austria Jobs
     type: aiaustria
