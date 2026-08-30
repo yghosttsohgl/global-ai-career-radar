@@ -11,7 +11,7 @@ class Job(BaseModel):
     source: str = ""
     source_access: str = "public"
     description: str = ""
-    japanese_requirement: str = "UNKNOWN"
+    language_requirement: str = "UNKNOWN"
     visa_status: str = "UNKNOWN"
     china_work_authorization: str = "UNKNOWN"
     first_seen: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

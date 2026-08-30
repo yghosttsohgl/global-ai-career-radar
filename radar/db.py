@@ -35,7 +35,7 @@ def init():
             source TEXT,
             source_access TEXT,
             description TEXT,
-            japanese_requirement TEXT,
+            language_requirement TEXT,
             visa_status TEXT,
             china_work_authorization TEXT,
             first_seen TEXT,
@@ -50,6 +50,14 @@ def init():
     """)
 
     existing_cols = {row["name"] for row in c.execute("PRAGMA table_info(jobs)")}
+
+    # Renamed: japanese_requirement -> language_requirement (the relevant
+    # language depends on the job's country - German for Austria, etc).
+    if "japanese_requirement" in existing_cols and "language_requirement" not in existing_cols:
+        c.execute("ALTER TABLE jobs RENAME COLUMN japanese_requirement TO language_requirement")
+        existing_cols.discard("japanese_requirement")
+        existing_cols.add("language_requirement")
+
     for name, coltype in NEW_COLUMNS:
         if name not in existing_cols:
             c.execute(f"ALTER TABLE jobs ADD COLUMN {name} {coltype}")
@@ -70,7 +78,7 @@ def save(j):
     c.execute("""
         INSERT INTO jobs (
             fingerprint, title, company, location, country, url, source, source_access,
-            description, japanese_requirement, visa_status, china_work_authorization,
+            description, language_requirement, visa_status, china_work_authorization,
             first_seen, last_seen, rule_score, recommendation, recommended_cv,
             strengths, gaps, reason
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -83,7 +91,7 @@ def save(j):
             source=excluded.source,
             source_access=excluded.source_access,
             description=excluded.description,
-            japanese_requirement=excluded.japanese_requirement,
+            language_requirement=excluded.language_requirement,
             visa_status=excluded.visa_status,
             china_work_authorization=excluded.china_work_authorization,
             last_seen=excluded.last_seen,
@@ -103,7 +111,7 @@ def save(j):
         j.source,
         j.source_access,
         j.description,
-        j.japanese_requirement,
+        j.language_requirement,
         j.visa_status,
         j.china_work_authorization,
         j.first_seen.isoformat(),
