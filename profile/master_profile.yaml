@@ -187,42 +187,33 @@ profile:
       target: "B2 by end of year"
 
   preferences:
+    # Open to broad tech + operations roles, not only AI. In rough order of
+    # preference, but a good fit in any of these is worth surfacing.
+    role_families:
+      - AI / LLM / NLP / Speech (evaluation, data, product)
+      - Technical / AI Product Management
+      - Program / Project Management
+      - QA / Testing / Test Automation
+      - Salesforce / CRM / low-code development
+      - Software Engineering (backend, full-stack, API)
+      - Data (analysis, quality, annotation operations)
+      - Operations / Business Operations
+      - Localization / i18n / language quality
+
     Japan:
-      preferred_roles:
-        - AI
-        - LLM
-        - NLP
-        - Speech AI
-        - AI Evaluation
-        - AI Product
-        - Technical Product Management
       english_friendly: true
       visa_sponsorship_preferred: true
 
     Austria:
-      preferred_roles:
-        - AI
-        - LLM
-        - NLP
-        - AI Evaluation
-        - AI Product
-        - Cloud AI
-        - Software
       english_friendly: true
+      german_level: "B1, improving to B2 - can take German-friendly roles, not yet German-only"
       visa_sponsorship_required: false
 
     China:
-      preferred_roles:
-        - AI
-        - LLM
-        - NLP
-        - Speech AI
-        - AI Evaluation
-        - AI Product
-        - Technical Product Management
       mandarin_friendly: true
       international_roles_preferred: true
       work_authorization: "Verify per job"
+      sourcing_note: "Big Chinese boards can't be auto-scanned; found via manual import."
 
   profile_update_notes:
     - "Add new projects here as they are completed."

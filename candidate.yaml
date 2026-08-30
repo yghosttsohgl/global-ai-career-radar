@@ -1,4 +1,48 @@
+# Broad-tech + ops search: AI/ML, QA/testing, Salesforce/CRM, software dev,
+# product/program/project management, data and operations roles all count.
+# Relevance is judged by radar/scoring.py + the LLM pass, so title_filter here
+# is only a coarse "is this remotely in scope" cut on big general boards.
+
+TECH_OPS_TITLES: &tech_ops_titles
+  - "product manager"
+  - "product owner"
+  - "program manager"
+  - "project manager"
+  - "プロダクトマネージャー"
+  - "プロジェクトマネージャー"
+  - "machine learning"
+  - "ml engineer"
+  - "ai "
+  - "/ ai"
+  - "nlp"
+  - "llm"
+  - "data scien"
+  - "data engineer"
+  - "data analyst"
+  - "機械学習"
+  - "qa engineer"
+  - "quality"
+  - "test engineer"
+  - "sdet"
+  - "salesforce"
+  - "crm"
+  - "software engineer"
+  - "developer"
+  - "engineer"
+  - "backend"
+  - "frontend"
+  - "full stack"
+  - "full-stack"
+  - "architect"
+  - "research"
+  - "technical staff"
+  - "analyst"
+  - "operations"
+  - "localization"
+  - "localisation"
+
 sources:
+  # ---------------- Japan ----------------
   - name: Anthropic Careers
     type: greenhouse
     board: anthropic
@@ -18,35 +62,36 @@ sources:
     link_pattern: '^/careers/[a-z0-9-]+/?$'
     enabled: true
 
+  - name: Japan Dev
+    type: japandev
+    country: Japan
+    # English-friendly Japan tech jobs (JSON API). Japanese-only postings are
+    # dropped by the scanner; title_filter trims non-tech/ops roles.
+    title_filter: *tech_ops_titles
+    enabled: true
+
   - name: PayPay Careers
     type: greenhouse
     board: paypay
     country: Japan
-    # Tokyo-based, English-friendly workplace. The board is ~85 roles spanning
-    # finance/HR/audit - title_filter keeps it to AI/ML/data/product only.
-    title_filter:
-      - "product manager"
-      - "プロダクトマネージャー"
-      - "machine learning"
-      - "ml engineer"
-      - "data scien"
-      - "data engineer"
-      - "機械学習"
-      - "ai "
-      - "/ ai"
-      - "nlp"
-      - "llm"
+    # Tokyo-based, English-friendly workplace. ~85 roles spanning
+    # finance/HR/audit - title_filter keeps it to tech + ops.
+    title_filter: *tech_ops_titles
     enabled: true
 
+  # ---------------- China (automated sourcing not viable; see notes) ----------------
+  # The big Chinese boards (51job, Zhaopin, BOSS Zhipin, Liepin) are app-first
+  # with aggressive anti-bot protection and can't be scraped from a cron.
+  # Use the dashboard's Manual Import tab for China roles. Duolingo's Beijing
+  # hub is the one automated China source.
   - name: Duolingo Careers
     type: greenhouse
     board: duolingo
     country: China
-    # Beijing engineering/product hub plus occasional Tokyo roles; language-
-    # learning ML/NLP/speech is a close thematic fit.
     location_filter: ["beijing", "china", "tokyo", "japan"]
     enabled: true
 
+  # ---------------- Austria / EU ----------------
   - name: Cohere Careers
     type: ashby
     board: cohere
@@ -62,22 +107,36 @@ sources:
       - "europe"
       - "tokyo"
       - "japan"
-    title_filter:
-      - "machine learning"
-      - "ml "
-      - "research"
-      - "engineer"
-      - "product"
-      - "evaluation"
-      - "nlp"
-      - "llm"
-      - "data"
-      - "applied ai"
+    title_filter: *tech_ops_titles
     enabled: true
 
-  - name: karriere.at AI Jobs
+  - name: karriere.at - KI/AI
     type: karriere_at
     url: https://www.karriere.at/jobs/k%C3%BCnstliche-intelligenz/wien
+    country: Austria
+    enabled: true
+
+  - name: karriere.at - Software-Entwicklung
+    type: karriere_at
+    url: https://www.karriere.at/jobs/software-entwicklung/wien
+    country: Austria
+    enabled: true
+
+  - name: karriere.at - QA / Test
+    type: karriere_at
+    url: https://www.karriere.at/jobs/qualitaetssicherung-test/wien
+    country: Austria
+    enabled: true
+
+  - name: karriere.at - Salesforce
+    type: karriere_at
+    url: https://www.karriere.at/jobs/salesforce/wien
+    country: Austria
+    enabled: true
+
+  - name: karriere.at - Projektmanagement
+    type: karriere_at
+    url: https://www.karriere.at/jobs/projektmanagement/wien
     country: Austria
     enabled: true
 
