@@ -70,6 +70,18 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  - name: Careerjet Japan
+    type: careerjet
+    country: Japan
+    # Aggregator API - covers Indeed JP, doda, etc. Needs CAREERJET_AFFID
+    # (free, https://partners.careerjet.com); skipped if unset.
+    locale_code: en_JP
+    location: Tokyo
+    queries: ["software engineer", "qa engineer", "machine learning", "product manager",
+              "data engineer", "localization", "devops", "salesforce"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
   - name: PayPay Careers
     type: greenhouse
     board: paypay
@@ -128,6 +140,30 @@ sources:
       - https://www.karriere.at/jobs/business-analyse/wien
       - https://www.karriere.at/jobs/datenanalyse/wien
       - https://www.karriere.at/jobs/devops/wien
+    enabled: true
+
+  - name: Adzuna Austria
+    type: adzuna
+    country: Austria
+    # Aggregator API - pulls Indeed AT, StepStone, CareerBuilder, ... Needs
+    # ADZUNA_APP_ID + ADZUNA_APP_KEY (free, https://developer.adzuna.com);
+    # skipped if unset. Adzuna has no Japan endpoint.
+    adzuna_country: at
+    where: Wien
+    max_days_old: 30
+    queries: ["software developer", "qa test engineer", "salesforce", "data analyst",
+              "machine learning", "project manager", "product manager", "devops", "business analyst"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Careerjet Austria
+    type: careerjet
+    country: Austria
+    locale_code: de_AT
+    location: Wien
+    queries: ["software", "qa test", "salesforce", "data", "machine learning",
+              "projektmanagement", "produktmanagement", "devops", "business analyse"]
+    title_filter: *tech_ops_titles
     enabled: true
 
   - name: AI Austria Jobs

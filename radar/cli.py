@@ -1,5 +1,6 @@
 import argparse
 import hashlib
+import os
 import re
 import time
 from urllib.parse import urljoin, urlparse
@@ -156,6 +157,82 @@ def scan_japandev(s):
     return saved
 
 
+# ---------- Aggregator APIs (Adzuna, Careerjet) ----------
+# These licence/aggregate the big boards (Indeed, StepStone, ...) and expose
+# clean JSON. Both need free credentials via env vars; a source with missing
+# credentials is skipped with a warning, like the optional LLM/Gmail steps.
+# Register: https://developer.adzuna.com  |  https://partners.careerjet.com
+
+def scan_adzuna(s):
+    app_id, app_key = os.environ.get("ADZUNA_APP_ID"), os.environ.get("ADZUNA_APP_KEY")
+    if not app_id or not app_key:
+        print("WARN", s["name"], "ADZUNA_APP_ID/ADZUNA_APP_KEY not set, skipping")
+        return 0
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
+    base = f"https://api.adzuna.com/v1/api/jobs/{s['adzuna_country']}/search"
+    seen, saved = set(), 0
+    for query in s.get("queries") or [s.get("what", "")]:
+        params = {
+            "app_id": app_id, "app_key": app_key, "results_per_page": 50,
+            "what": query, "where": s.get("where", ""),
+            "max_days_old": s.get("max_days_old", 30), "content-type": "application/json",
+        }
+        try:
+            results = requests.get(base, params=params, headers=HEADERS, timeout=TIMEOUT).json().get("results", [])
+        except Exception as e:
+            print("WARN", s["name"], query, e)
+            continue
+        for job in results:
+            url = job.get("redirect_url") or ""
+            if url in seen or not _keeps(job.get("title", ""), title_filter):
+                continue
+            seen.add(url)
+            loc = (job.get("location") or {}).get("display_name") or ""
+            save(make_job(
+                title=job.get("title", "").strip(), company=(job.get("company") or {}).get("display_name") or s["name"],
+                country=s["country"], location=loc,
+                url=url, source=s["name"], description=job.get("description", ""),
+            ))
+            saved += 1
+        time.sleep(DETAIL_FETCH_DELAY)
+    return saved
+
+
+def scan_careerjet(s):
+    affid = os.environ.get("CAREERJET_AFFID")
+    if not affid:
+        print("WARN", s["name"], "CAREERJET_AFFID not set, skipping")
+        return 0
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
+    seen, saved = set(), 0
+    for query in s.get("queries") or [s.get("keywords", "")]:
+        params = {
+            "locale_code": s["locale_code"], "keywords": query, "location": s.get("location", ""),
+            "affid": affid, "pagesize": 99, "sort": "date",
+            "user_ip": os.environ.get("CAREERJET_USER_IP", "8.8.8.8"),
+            "user_agent": HEADERS["User-Agent"],
+        }
+        try:
+            data = requests.get("https://public.api.careerjet.net/search", params=params,
+                                headers=HEADERS, timeout=TIMEOUT).json()
+        except Exception as e:
+            print("WARN", s["name"], query, e)
+            continue
+        for job in data.get("jobs", []):
+            url = job.get("url") or ""
+            if url in seen or not _keeps(job.get("title", ""), title_filter):
+                continue
+            seen.add(url)
+            save(make_job(
+                title=(job.get("title") or "").strip(), company=job.get("company") or s["name"],
+                country=s["country"], location=job.get("locations") or s.get("location", ""),
+                url=url, source=s["name"], description=clean_text(job.get("description", "")),
+            ))
+            saved += 1
+        time.sleep(DETAIL_FETCH_DELAY)
+    return saved
+
+
 # ---------- Generic link-pattern scraper (e.g. Sakana AI careers) ----------
 # link_pattern scopes which anchors are real job postings (not nav/footer links).
 
@@ -275,6 +352,8 @@ SCANNERS = {
     "greenhouse": scan_greenhouse,
     "ashby": scan_ashby,
     "japandev": scan_japandev,
+    "adzuna": scan_adzuna,
+    "careerjet": scan_careerjet,
     "html_list": scan_html_list,
     "karriere_at": scan_karriere_at,
     "aiaustria": scan_aiaustria,

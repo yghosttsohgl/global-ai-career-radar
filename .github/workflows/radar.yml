@@ -29,6 +29,10 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
+          # Optional aggregator APIs - sources skip themselves if unset.
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          CAREERJET_AFFID: ${{ secrets.CAREERJET_AFFID }}
         run: python -m radar.cli run
 
       - name: Commit updated job database
