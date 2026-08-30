@@ -18,6 +18,63 @@ sources:
     link_pattern: '^/careers/[a-z0-9-]+/?$'
     enabled: true
 
+  - name: PayPay Careers
+    type: greenhouse
+    board: paypay
+    country: Japan
+    # Tokyo-based, English-friendly workplace. The board is ~85 roles spanning
+    # finance/HR/audit - title_filter keeps it to AI/ML/data/product only.
+    title_filter:
+      - "product manager"
+      - "プロダクトマネージャー"
+      - "machine learning"
+      - "ml engineer"
+      - "data scien"
+      - "data engineer"
+      - "機械学習"
+      - "ai "
+      - "/ ai"
+      - "nlp"
+      - "llm"
+    enabled: true
+
+  - name: Duolingo Careers
+    type: greenhouse
+    board: duolingo
+    country: China
+    # Beijing engineering/product hub plus occasional Tokyo roles; language-
+    # learning ML/NLP/speech is a close thematic fit.
+    location_filter: ["beijing", "china", "tokyo", "japan"]
+    enabled: true
+
+  - name: Cohere Careers
+    type: ashby
+    board: cohere
+    # "Austria" is used here as the EU / work-permit bucket - Cohere's European
+    # roles are Berlin/Munich/Paris/London/remote-Europe, plus a few in Tokyo.
+    country: Austria
+    location_filter:
+      - "austria"
+      - "vienna"
+      - "germany"
+      - "berlin"
+      - "munich"
+      - "europe"
+      - "tokyo"
+      - "japan"
+    title_filter:
+      - "machine learning"
+      - "ml "
+      - "research"
+      - "engineer"
+      - "product"
+      - "evaluation"
+      - "nlp"
+      - "llm"
+      - "data"
+      - "applied ai"
+    enabled: true
+
   - name: karriere.at AI Jobs
     type: karriere_at
     url: https://www.karriere.at/jobs/k%C3%BCnstliche-intelligenz/wien
