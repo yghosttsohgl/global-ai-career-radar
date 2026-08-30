@@ -157,11 +157,15 @@ def scan_japandev(s):
     return saved
 
 
-# ---------- Aggregator APIs (Adzuna, Careerjet) ----------
-# These licence/aggregate the big boards (Indeed, StepStone, ...) and expose
-# clean JSON. Both need free credentials via env vars; a source with missing
-# credentials is skipped with a warning, like the optional LLM/Gmail steps.
-# Register: https://developer.adzuna.com  |  https://partners.careerjet.com
+# ---------- Aggregator APIs (Adzuna, Careerjet, JSearch) ----------
+# These licence/aggregate the big boards (Indeed, LinkedIn, StepStone, ...) and
+# expose clean JSON. Each needs free credentials via env vars; a source with
+# missing credentials is skipped with a warning, like the optional LLM/Gmail
+# steps. Register:
+#   Adzuna    - https://developer.adzuna.com          (Austria; no Japan endpoint)
+#   Careerjet - careerjet.com/partners (needs a website to publish listings on)
+#   JSearch   - https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch (no website
+#               needed; wraps Google for Jobs -> Indeed + LinkedIn + Glassdoor)
 
 def scan_adzuna(s):
     app_id, app_key = os.environ.get("ADZUNA_APP_ID"), os.environ.get("ADZUNA_APP_KEY")
@@ -231,6 +235,46 @@ def scan_careerjet(s):
                 title=(job.get("title") or "").strip(), company=job.get("company") or s["name"],
                 country=s["country"], location=job.get("locations") or s.get("location", ""),
                 url=url, source=s["name"], description=clean_text(job.get("description", "")),
+            ))
+            saved += 1
+        time.sleep(DETAIL_FETCH_DELAY)
+    return saved
+
+
+def scan_jsearch(s):
+    key = os.environ.get("RAPIDAPI_KEY")
+    if not key:
+        print("WARN", s["name"], "RAPIDAPI_KEY not set, skipping")
+        return 0
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
+    headers = {"X-RapidAPI-Key": key, "X-RapidAPI-Host": "jsearch.p.rapidapi.com"}
+    seen, saved = set(), 0
+    for query in s["queries"]:
+        params = {
+            "query": query, "page": 1, "num_pages": s.get("num_pages", 1),
+            "country": s["jsearch_country"], "date_posted": s.get("date_posted", "month"),
+        }
+        try:
+            data = requests.get("https://jsearch.p.rapidapi.com/search", params=params,
+                                headers=headers, timeout=TIMEOUT).json()
+        except Exception as e:
+            print("WARN", s["name"], query, e)
+            continue
+        if data.get("status") != "OK":
+            print("WARN", s["name"], query, data.get("error") or data.get("message") or data)
+            continue
+        for job in data.get("data", []):
+            url = job.get("job_apply_link") or job.get("job_google_link") or ""
+            title = job.get("job_title") or ""
+            if url in seen or not _keeps(title, title_filter):
+                continue
+            seen.add(url)
+            loc = ", ".join(filter(None, [job.get("job_city"), job.get("job_state"), job.get("job_country")]))
+            save(make_job(
+                title=title.strip(), company=job.get("employer_name") or s["name"],
+                country=s["country"], location=loc or s.get("location", ""),
+                url=url, source=s["name"],
+                description=(job.get("job_description") or "")[:6000],
             ))
             saved += 1
         time.sleep(DETAIL_FETCH_DELAY)
@@ -358,6 +402,7 @@ SCANNERS = {
     "japandev": scan_japandev,
     "adzuna": scan_adzuna,
     "careerjet": scan_careerjet,
+    "jsearch": scan_jsearch,
     "html_list": scan_html_list,
     "karriere_at": scan_karriere_at,
     "aiaustria": scan_aiaustria,
