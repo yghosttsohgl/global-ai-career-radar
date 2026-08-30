@@ -6,8 +6,8 @@ from radar.db import init,jobs,save
 from radar.importer import import_job
 
 init()
-st.set_page_config(page_title="Job Radar",layout="wide")
-st.title("🇯🇵 🇦🇹 🇨🇳 Job Radar")
+st.set_page_config(page_title="Global AI Career Radar",layout="wide")
+st.title("🌍 Global AI Career Radar")
 
 a,b,c=st.tabs(["Ranked Jobs","Manual Import","Profile"])
 

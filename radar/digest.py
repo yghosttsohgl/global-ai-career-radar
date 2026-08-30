@@ -18,7 +18,7 @@ def _pending_jobs(c):
 
 
 def _render_text(rows):
-    lines = [f"Job Radar - {len(rows)} new match(es)\n"]
+    lines = [f"Global AI Career Radar - {len(rows)} new match(es)\n"]
     for j in rows:
         score = j["llm_score"] if j["llm_score"] is not None else j["rule_score"]
         verdict = j["llm_verdict"] or j["recommendation"]
@@ -58,7 +58,7 @@ def send_digest():
     to_addr = os.environ.get("DIGEST_TO", gmail_address)
 
     msg = MIMEMultipart()
-    msg["Subject"] = f"Job Radar: {len(rows)} new match(es)"
+    msg["Subject"] = f"Global AI Career Radar: {len(rows)} new match(es)"
     msg["From"] = gmail_address
     msg["To"] = to_addr
     msg.attach(MIMEText(_render_text(rows), "plain"))

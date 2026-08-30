@@ -1,4 +1,4 @@
-name: Job Radar
+name: Global AI Career Radar
 
 on:
   schedule:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Commit updated job database
         run: |
-          git config user.name "job-radar-bot"
+          git config user.name "global-ai-career-radar-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/jobs.sqlite3
           git diff --cached --quiet || git commit -m "Update job database"

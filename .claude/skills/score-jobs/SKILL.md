@@ -1,11 +1,11 @@
 ---
 name: score-jobs
-description: Manually LLM-score pending Job Radar jobs against the candidate profile, without an Anthropic API key - use when the user asks to score, evaluate, or review new/pending jobs in this repo.
+description: Manually LLM-score pending Global AI Career Radar jobs against the candidate profile, without an Anthropic API key - use when the user asks to score, evaluate, or review new/pending jobs in this repo.
 ---
 
-# Score pending Job Radar jobs (no API key needed)
+# Score pending Global AI Career Radar jobs (no API key needed)
 
-This project (`japan_austria_china_job_radar`) normally LLM-scores jobs via
+This project (`global-ai-career-radar`) normally LLM-scores jobs via
 `radar/llm_scoring.py` calling the Anthropic API. When there's no
 `ANTHROPIC_API_KEY` configured, do the same evaluation yourself instead,
 using the user's Claude Pro/Max session - no separate API spend.
