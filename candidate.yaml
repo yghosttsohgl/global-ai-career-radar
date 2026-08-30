@@ -110,34 +110,24 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
-  - name: karriere.at - KI/AI
+  - name: karriere.at Vienna
     type: karriere_at
-    url: https://www.karriere.at/jobs/k%C3%BCnstliche-intelligenz/wien
     country: Austria
-    enabled: true
-
-  - name: karriere.at - Software-Entwicklung
-    type: karriere_at
-    url: https://www.karriere.at/jobs/software-entwicklung/wien
-    country: Austria
-    enabled: true
-
-  - name: karriere.at - QA / Test
-    type: karriere_at
-    url: https://www.karriere.at/jobs/qualitaetssicherung-test/wien
-    country: Austria
-    enabled: true
-
-  - name: karriere.at - Salesforce
-    type: karriere_at
-    url: https://www.karriere.at/jobs/salesforce/wien
-    country: Austria
-    enabled: true
-
-  - name: karriere.at - Projektmanagement
-    type: karriere_at
-    url: https://www.karriere.at/jobs/projektmanagement/wien
-    country: Austria
+    # One source, many keyword categories - Austria's biggest board. Results
+    # are de-duped by job URL within the run. Add/remove categories freely;
+    # each is https://www.karriere.at/jobs/{slug}/wien
+    urls:
+      - https://www.karriere.at/jobs/k%C3%BCnstliche-intelligenz/wien
+      - https://www.karriere.at/jobs/maschinelles-lernen/wien
+      - https://www.karriere.at/jobs/software-entwicklung/wien
+      - https://www.karriere.at/jobs/qualitaetssicherung-test/wien
+      - https://www.karriere.at/jobs/qualitatsmanagement/wien
+      - https://www.karriere.at/jobs/salesforce/wien
+      - https://www.karriere.at/jobs/projektmanagement/wien
+      - https://www.karriere.at/jobs/produktmanagement/wien
+      - https://www.karriere.at/jobs/business-analyse/wien
+      - https://www.karriere.at/jobs/datenanalyse/wien
+      - https://www.karriere.at/jobs/devops/wien
     enabled: true
 
   - name: AI Austria Jobs
