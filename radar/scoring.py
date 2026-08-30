@@ -4,14 +4,76 @@ with open("profile/master_profile.yaml", encoding="utf8") as f:
     PROFILE = yaml.safe_load(f)
 
 # (label, keywords, points). Label is stored in Job.strengths when matched.
+# The candidate's toolkit is broader than AI - QA/testing, Salesforce/CRM,
+# software dev, product/program/project management, data, operations and
+# localization all count. Points can stack; a solid non-AI match should still
+# clear RULE_SCORE_FLOOR (40 in llm_scoring.py) and reach the LLM pass.
 KEYWORD_GROUPS = [
-    ("LLM / GenAI / NLP", ["llm", "genai", "machine learning", "nlp", "speech", "大模型", "大语言模型", "人工智能"], 25),
-    ("Model evaluation / QA", ["evaluation", "model quality", "ai quality", "qa", "testing", "评测", "模型评估"], 20),
-    ("Python / SQL / API", ["python", "sql", "api"], 10),
-    ("Product / program management", ["product manager", "technical product", "program manager", "产品经理", "项目经理"], 10),
-    ("English-friendly / international team", ["english", "international", "英文"], 10),
-    ("Visa sponsorship mentioned", ["visa sponsorship", "visa support", "work visa", "签证", "工作许可"], 15),
-    ("Speech (TTS/ASR)", ["tts", "asr", "voice", "语音", "语音识别", "语音合成"], 10),
+    ("AI / GenAI / NLP / ML", [
+        "llm", "genai", "generative ai", "machine learning", "ml engineer", "nlp",
+        "大模型", "大语言模型", "人工智能", "自然语言",
+    ], 22),
+    ("AI model evaluation / quality", [
+        "model evaluation", "model quality", "ai quality", "benchmark", "eval harness",
+        "评测", "模型评估", "模型效果",
+    ], 15),
+    ("Speech (TTS / ASR)", [
+        "tts", "asr", "speech", "voice", "语音", "语音识别", "语音合成",
+    ], 12),
+    ("QA / Testing / Test automation", [
+        "qa engineer", "quality assurance", "test engineer", "sdet", "test automation",
+        "manual testing", "automated test", "integration test", "unit test", "api testing",
+        "end-to-end test", "e2e test", "playwright", "selenium", "cypress", "postman",
+        "test case", "test plan", "测试", "质量保证",
+    ], 25),
+    ("Salesforce / CRM / low-code", [
+        "salesforce", "apex", "lightning", "sales cloud", "service cloud", "mulesoft",
+        "low-code", "no-code", "dynamics 365", "crm platform", "crm developer",
+        "crm administrator", "hubspot",
+    ], 25),
+    ("Software engineering", [
+        "software engineer", "software developer", "backend", "front-end", "frontend",
+        "full stack", "full-stack", "web developer", "python", "javascript", "typescript",
+        "rest api", "sql", "git ",
+    ], 18),
+    ("Product / Program / Project management", [
+        "product manager", "product owner", "technical product", "program manager",
+        "project manager", "delivery manager", "scrum master", "project lead",
+        "产品经理", "项目经理", "项目管理", "プロジェクトマネージャ", "プロダクトマネージャ",
+    ], 18),
+    ("Data (analysis / quality / annotation)", [
+        "data analyst", "data engineer", "data quality", "analytics", "business intelligence",
+        "dashboard", "etl", "data pipeline", "annotation", "data labeling", "labelling",
+        "数据分析", "数据标注",
+    ], 15),
+    ("Operations / Business operations", [
+        "operations manager", "business operations", "revops", "bizops", "sales operations",
+        "process improvement", "process automation", "workflow automation", "business process",
+        "operational excellence", "运营", "业务运营",
+    ], 15),
+    ("Localization / i18n / linguistic", [
+        "localization", "localisation", "i18n", "l10n", "internationalization",
+        "translation", "linguist", "machine translation", "language quality", "transcreation",
+        "本地化", "ローカライズ",
+    ], 20),
+    ("DevOps / Cloud", [
+        "devops", "kubernetes", "docker", "aws", "gcp", "azure", "ci/cd", "terraform",
+        "cloud engineer", "site reliability",
+    ], 12),
+    ("Agile tooling / process", [
+        "jira", "confluence", "agile", "scrum", "kanban",
+    ], 6),
+    ("English-friendly / international team", [
+        "english", "international team", "english is the working language", "英文",
+    ], 10),
+    ("Visa sponsorship / relocation mentioned", [
+        "visa sponsorship", "visa support", "work visa", "relocation support",
+        "relocation package", "签证", "工作许可", "工作签证",
+    ], 15),
+    ("Multilingual asset (JP / ZH / EN / DE)", [
+        "bilingual", "trilingual", "mandarin", "chinese language", "japanese language",
+        "german language", "日本語", "中文", "deutsch",
+    ], 8),
 ]
 
 
@@ -67,10 +129,16 @@ def cv(j):
     t = f"{j.title} {j.description}".lower()
     if j.country == "China" or any(x in t for x in ["llm-pm", "大模型", "大模型"]):
         return "AI / LLM Product" if any(x in t for x in ["product", "产品", "manager", "经理"]) else "China-focused"
-    if any(x in t for x in ["evaluation", "nlp", "speech", "tts", "asr", "machine translation"]):
+    if any(x in t for x in ["evaluation", "nlp", "speech", "tts", "asr", "machine translation", "localization", "localisation", "linguist"]):
         return "AI / NLP / Evaluation"
-    if any(x in t for x in ["software", "backend", "api", "developer", "python", "sql", "engineer"]):
+    if any(x in t for x in [
+        "salesforce", "apex", "qa engineer", "quality assurance", "test engineer", "sdet",
+        "software", "backend", "frontend", "full stack", "full-stack", "api", "developer",
+        "python", "sql", "devops", "kubernetes",
+    ]):
         return "Technical / Software"
+    if any(x in t for x in ["product manager", "program manager", "project manager", "product owner"]):
+        return "AI / LLM Product"
     if j.country == "Japan":
         return "Japan-focused"
     return "AI / LLM Product"
