@@ -42,6 +42,17 @@ def make_job(*, title, company, country, location, url, source, description):
     return j
 
 
+# ---------- Shared filters for API-backed boards (Greenhouse, Ashby) ----------
+# Both APIs list a company's whole board, so sources narrow it two ways:
+#   location_filter: keep a posting only if an office location matches
+#   title_filter:    keep a posting only if its title matches (drops the
+#                    finance/HR/sales noise on a big general-purpose board)
+# An unset filter means "keep everything".
+
+def _keeps(text, needles):
+    return not needles or any(n in text.lower() for n in needles)
+
+
 # ---------- Greenhouse-hosted boards (e.g. Anthropic) ----------
 # Public API: https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true
 # Gives clean per-job title/location/description - no scraping needed.
@@ -49,20 +60,46 @@ def make_job(*, title, company, country, location, url, source, description):
 def scan_greenhouse(s):
     board = s["board"]
     location_filter = [x.lower() for x in s.get("location_filter", [])]
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
     data = fetch(f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs?content=true").json()
 
     saved = 0
     for job in data.get("jobs", []):
         locations = [job.get("location", {}).get("name") or ""]
         locations += [o.get("location") or "" for o in job.get("offices", [])]
-        locations_text = " | ".join(locations).lower()
-        if location_filter and not any(loc in locations_text for loc in location_filter):
+        if not _keeps(" | ".join(locations), location_filter) or not _keeps(job["title"], title_filter):
             continue
         description = clean_text(job.get("content", ""))
         save(make_job(
             title=job["title"], company=job.get("company_name", s["name"]),
             country=s["country"], location=" / ".join(filter(None, set(locations))) or "Unknown",
             url=job["absolute_url"], source=s["name"], description=description,
+        ))
+        saved += 1
+    return saved
+
+
+# ---------- Ashby-hosted boards (e.g. Cohere) ----------
+# Public API: https://api.ashbyhq.com/posting-api/job-board/{org}
+# Returns clean per-job title/location/description - like Greenhouse, no scraping.
+
+def scan_ashby(s):
+    org = s["board"]
+    location_filter = [x.lower() for x in s.get("location_filter", [])]
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
+    data = fetch(f"https://api.ashbyhq.com/posting-api/job-board/{org}").json()
+
+    saved = 0
+    for job in data.get("jobs", []):
+        locations = [job.get("location") or ""]
+        locations += [o.get("location") or "" for o in job.get("secondaryLocations", [])]
+        if not _keeps(" | ".join(locations), location_filter) or not _keeps(job["title"], title_filter):
+            continue
+        description = (job.get("descriptionPlain") or "")[:6000]
+        save(make_job(
+            title=job["title"], company=s["name"],
+            country=s["country"], location=" / ".join(filter(None, dict.fromkeys(locations))) or "Unknown",
+            url=job.get("jobUrl") or job.get("applyUrl") or "", source=s["name"], description=description,
         ))
         saved += 1
     return saved
@@ -174,6 +211,7 @@ def scan_aiaustria(s):
 
 SCANNERS = {
     "greenhouse": scan_greenhouse,
+    "ashby": scan_ashby,
     "html_list": scan_html_list,
     "karriere_at": scan_karriere_at,
     "aiaustria": scan_aiaustria,
