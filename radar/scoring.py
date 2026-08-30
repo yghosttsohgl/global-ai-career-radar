@@ -113,16 +113,52 @@ def classify(j):
         j.china_work_authorization = "UNKNOWN"
         gaps.append("China work authorization not confirmed - verify before applying")
 
-    if any(k in t for k in ["native japanese", "business japanese", "fluent japanese", "jlpt n1", "商务日语", "日语n1"]):
-        j.japanese_requirement = "BUSINESS_OR_HIGHER"
-        gaps.append("Requires business-level+ Japanese; current speaking/writing is weak")
-    elif any(k in t for k in ["japanese preferred", "conversational japanese", "日语优先", "日语加分"]):
-        j.japanese_requirement = "PREFERRED_OR_CONVERSATIONAL"
-    elif any(k in t for k in ["no japanese required", "english only", "english is the working language", "英文工作"]):
-        j.japanese_requirement = "ENGLISH_FRIENDLY"
-
+    j.language_requirement = _language_requirement(j.country, t, gaps)
     j.gaps = gaps
     return j
+
+
+# Per-market local-language screen. The candidate has weak spoken/written
+# Japanese (JLPT N1 reading only), German at B1 heading to B2, and native
+# Mandarin - so a hard requirement is a real gap for Japan and Austria but
+# essentially never for China.
+_LANG_CUES = {
+    "Japan": {
+        "BUSINESS_OR_HIGHER": ["native japanese", "business japanese", "business-level japanese",
+                               "fluent japanese", "jlpt n1", "商务日语", "日语n1", "ビジネスレベルの日本語"],
+        "PREFERRED_OR_CONVERSATIONAL": ["japanese preferred", "conversational japanese",
+                                        "日语优先", "日语加分", "日常会話レベル"],
+        "ENGLISH_FRIENDLY": ["no japanese required", "english only", "english is the working language",
+                             "英文工作", "no japanese ability required"],
+        "gap": "Requires business-level+ Japanese; current speaking/writing is weak",
+    },
+    "Austria": {
+        "BUSINESS_OR_HIGHER": ["verhandlungssicher", "fließend deutsch", "fliessend deutsch",
+                               "sehr gute deutschkenntnisse", "ausgezeichnete deutschkenntnisse",
+                               "muttersprache deutsch", "deutsch auf muttersprachniveau",
+                               "c1 deutsch", "deutsch c1", "c2 deutsch", "deutsch c2",
+                               "fluent german", "native german", "excellent german", "business-level german"],
+        "PREFERRED_OR_CONVERSATIONAL": ["gute deutschkenntnisse", "deutschkenntnisse von vorteil",
+                                        "grundkenntnisse deutsch", "deutsch erwünscht", "deutsch von vorteil",
+                                        "b2 deutsch", "deutsch b2", "german is a plus", "conversational german"],
+        "ENGLISH_FRIENDLY": ["english is the working language", "englisch als arbeitssprache",
+                             "no german required", "german not required", "kein deutsch erforderlich",
+                             "english-speaking team", "no german skills required"],
+        "gap": "Requires business-level+ German; candidate is B1 (targeting B2)",
+    },
+}
+
+
+def _language_requirement(country, text, gaps):
+    cues = _LANG_CUES.get(country)
+    if not cues:  # China - native Mandarin, no local-language barrier
+        return "NOT_A_BARRIER_FOR_USER"
+    for level in ("BUSINESS_OR_HIGHER", "PREFERRED_OR_CONVERSATIONAL", "ENGLISH_FRIENDLY"):
+        if any(k in text for k in cues[level]):
+            if level == "BUSINESS_OR_HIGHER":
+                gaps.append(cues["gap"])
+            return level
+    return "UNKNOWN"
 
 
 def cv(j):

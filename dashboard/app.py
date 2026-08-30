@@ -23,7 +23,8 @@ with a:
         badge = "🤖" if j["llm_score"] is not None else "📏"
         st.subheader(f'{badge} {round(score)}/100 — {j["title"]}')
         st.write(f'**{j["company"]}** · {j["location"] or "Unknown"} · {j["country"]}')
-        st.write(f'Authorization: **{j["visa_status"]}** · Japanese: **{j["japanese_requirement"]}**')
+        lang_label = {"Austria": "German", "Japan": "Japanese", "China": "Mandarin"}.get(j["country"], "Local language")
+        st.write(f'Authorization: **{j["visa_status"]}** · {lang_label}: **{j["language_requirement"]}**')
         st.write(f'Recommended CV: **{j["recommended_cv"]}** · Recommendation: **{verdict}**')
         if j["llm_reasoning"]: st.caption(f'🤖 {j["llm_reasoning"]}')
         if j["strengths"]: st.caption("✅ " + " · ".join(j["strengths"].split("|")))
