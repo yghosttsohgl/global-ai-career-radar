@@ -242,12 +242,13 @@ def scan_careerjet(s):
 
 
 def scan_jsearch(s):
-    key = os.environ.get("RAPIDAPI_KEY")
+    key = (os.environ.get("RAPIDAPI_KEY") or "").strip()
     if not key:
         print("WARN", s["name"], "RAPIDAPI_KEY not set, skipping")
         return 0
     title_filter = [x.lower() for x in s.get("title_filter", [])]
-    headers = {"X-RapidAPI-Key": key, "X-RapidAPI-Host": "jsearch.p.rapidapi.com"}
+    host = s.get("rapidapi_host", "jsearch.p.rapidapi.com")
+    headers = {"x-rapidapi-key": key, "x-rapidapi-host": host}
     seen, saved = set(), 0
     for query in s["queries"]:
         params = {
@@ -255,15 +256,16 @@ def scan_jsearch(s):
             "country": s["jsearch_country"], "date_posted": s.get("date_posted", "month"),
         }
         try:
-            data = requests.get("https://jsearch.p.rapidapi.com/search", params=params,
-                                headers=headers, timeout=TIMEOUT).json()
+            r = requests.get(f"https://{host}/search", params=params, headers=headers, timeout=TIMEOUT)
+            data = r.json()
         except Exception as e:
             print("WARN", s["name"], query, e)
             continue
         if data.get("status") != "OK":
             msg = data.get("error") or data.get("message") or data
             if "does not exist" in str(msg) or "not subscribed" in str(msg):
-                msg = f"{msg}  (subscribe the RapidAPI key to the JSearch API's free Basic plan)"
+                msg = (f"HTTP {r.status_code}: {msg}  (check on RapidAPI that the App whose key "
+                       f"this is - not just the account - is subscribed to JSearch)")
             print("WARN", s["name"], query, msg)
             continue
         for job in data.get("data", []):
