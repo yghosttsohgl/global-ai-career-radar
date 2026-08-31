@@ -230,3 +230,13 @@ sources:
     location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria", "apac"]
     title_filter: *tech_ops_titles
     enabled: true
+
+  - name: Himalayas
+    type: himalayas
+    country: Remote
+    # Keyless, ~100k remote jobs, date-sorted. Pages through the most recent
+    # max_pages*20 and keeps the region-eligible tech/ops roles.
+    max_pages: 25
+    location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"]
+    title_filter: *tech_ops_titles
+    enabled: true
