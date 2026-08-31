@@ -70,6 +70,14 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  - name: OpenAI Japan
+    type: ashby
+    board: openai
+    country: Japan
+    location_filter: ["tokyo", "japan"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
   - name: JSearch Japan
     type: jsearch
     country: Japan
@@ -138,6 +146,26 @@ sources:
       - "europe"
       - "tokyo"
       - "japan"
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: OpenAI Europe
+    type: ashby
+    board: openai
+    # EU / work-permit bucket (see Cohere note). OpenAI EU offices: Dublin,
+    # London, Munich, Zurich, Paris, Brussels.
+    country: Austria
+    location_filter: ["dublin", "london", "munich", "berlin", "zurich", "paris",
+                      "brussels", "vienna", "austria", "emea", "remote"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Perplexity Careers
+    type: ashby
+    board: perplexity
+    country: Austria
+    location_filter: ["london", "berlin", "belgrade", "munich", "paris", "dublin",
+                      "vienna", "austria", "tokyo", "japan", "emea", "remote"]
     title_filter: *tech_ops_titles
     enabled: true
 
