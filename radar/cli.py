@@ -257,7 +257,8 @@ def scan_jsearch(s):
         }
         try:
             # /search-v2 (cursor-paginated) - the old /search 404s on current JSearch.
-            r = requests.get(f"https://{host}/search-v2", params=params, headers=headers, timeout=TIMEOUT)
+            # JSearch scrapes live and is slow (~7s typical), so allow extra time.
+            r = requests.get(f"https://{host}/search-v2", params=params, headers=headers, timeout=45)
             data = r.json()
         except Exception as e:
             print("WARN", s["name"], query, e)
