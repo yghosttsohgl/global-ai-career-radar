@@ -100,7 +100,9 @@ def classify(j):
     t = f"{j.title} {j.description}".lower()
     gaps = []
 
-    if j.country == "Austria":
+    if j.country in ("Austria", "Remote"):
+        # Austria: unrestricted permit. Remote: taken with the EU permit, and
+        # roles open to "Worldwide"/"Europe" don't impose a work-location gate.
         j.visa_status = "NOT_NEEDED_FOR_USER"
     elif j.country == "Japan":
         if any(k in t for k in ["visa sponsorship", "visa support", "work visa support"]):
