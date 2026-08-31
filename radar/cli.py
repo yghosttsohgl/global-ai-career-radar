@@ -288,6 +288,44 @@ def scan_jsearch(s):
     return saved
 
 
+# ---------- Remotive (curated remote-job board, keyless JSON API) ----------
+# https://remotive.com/api/remote-jobs?category={cat}
+# location_filter here matches candidate_required_location - keep only roles
+# open to the candidate's region (Worldwide / Europe / EMEA / ...), not "USA only".
+
+def scan_remotive(s):
+    location_filter = [x.lower() for x in s.get("location_filter",
+                       ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"])]
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
+    seen, saved = set(), 0
+    for category in s.get("categories") or [None]:
+        url = "https://remotive.com/api/remote-jobs"
+        if category:
+            url += f"?category={category}"
+        try:
+            jobs_data = fetch(url).json().get("jobs", [])
+        except Exception as e:
+            print("WARN", s["name"], category, e)
+            continue
+        for job in jobs_data:
+            link = job.get("url") or ""
+            if link in seen:
+                continue
+            if not _keeps(job.get("candidate_required_location", ""), location_filter):
+                continue
+            if not _keeps(job.get("title", ""), title_filter):
+                continue
+            seen.add(link)
+            save(make_job(
+                title=(job.get("title") or "").strip(), company=job.get("company_name") or s["name"],
+                country=s["country"], location=job.get("candidate_required_location") or "Remote",
+                url=link, source=s["name"], description=clean_text(job.get("description", "")),
+            ))
+            saved += 1
+        time.sleep(DETAIL_FETCH_DELAY)
+    return saved
+
+
 # ---------- Generic link-pattern scraper (e.g. Sakana AI careers) ----------
 # link_pattern scopes which anchors are real job postings (not nav/footer links).
 
@@ -410,6 +448,7 @@ SCANNERS = {
     "adzuna": scan_adzuna,
     "careerjet": scan_careerjet,
     "jsearch": scan_jsearch,
+    "remotive": scan_remotive,
     "html_list": scan_html_list,
     "karriere_at": scan_karriere_at,
     "aiaustria": scan_aiaustria,

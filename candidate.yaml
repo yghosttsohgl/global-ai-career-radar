@@ -219,3 +219,14 @@ sources:
     url: https://aiaustria.com/jobs
     country: Austria
     enabled: true
+
+  # ---------------- Remote (any location, taken with the EU work permit) ----------------
+  - name: Remotive
+    type: remotive
+    country: Remote
+    # Keyless curated remote-job API. location_filter matches the role's
+    # candidate_required_location - keep Worldwide/Europe/EMEA, drop "USA only".
+    categories: ["software-dev", "devops", "data", "product", "qa", "customer-support"]
+    location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria", "apac"]
+    title_filter: *tech_ops_titles
+    enabled: true

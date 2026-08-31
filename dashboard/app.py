@@ -13,7 +13,7 @@ a,b,c=st.tabs(["Ranked Jobs","Manual Import","Profile"])
 
 with a:
     data=jobs()
-    countries=st.multiselect("Countries",["Japan","Austria","China"],["Japan","Austria","China"])
+    countries=st.multiselect("Countries",["Japan","Austria","China","Remote"],["Japan","Austria","China","Remote"])
     minimum=st.slider("Minimum score",0,100,40)
     st.info("Japan: JLPT N1 (2018); strong reading/listening, weak speaking/writing. Austria: unrestricted work permit. China: Mandarin native; work authorization requires verification.")
     for j in data:
@@ -23,7 +23,7 @@ with a:
         badge = "🤖" if j["llm_score"] is not None else "📏"
         st.subheader(f'{badge} {round(score)}/100 — {j["title"]}')
         st.write(f'**{j["company"]}** · {j["location"] or "Unknown"} · {j["country"]}')
-        lang_label = {"Austria": "German", "Japan": "Japanese", "China": "Mandarin"}.get(j["country"], "Local language")
+        lang_label = {"Austria": "German", "Japan": "Japanese", "China": "Mandarin", "Remote": "Language"}.get(j["country"], "Local language")
         st.write(f'Authorization: **{j["visa_status"]}** · {lang_label}: **{j["language_requirement"]}**')
         st.write(f'Recommended CV: **{j["recommended_cv"]}** · Recommendation: **{verdict}**')
         if j["llm_reasoning"]: st.caption(f'🤖 {j["llm_reasoning"]}')
