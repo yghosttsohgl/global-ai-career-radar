@@ -252,11 +252,12 @@ def scan_jsearch(s):
     seen, saved = set(), 0
     for query in s["queries"]:
         params = {
-            "query": query, "page": 1, "num_pages": s.get("num_pages", 1),
-            "country": s["jsearch_country"], "date_posted": s.get("date_posted", "month"),
+            "query": query, "country": s["jsearch_country"],
+            "date_posted": s.get("date_posted", "month"),
         }
         try:
-            r = requests.get(f"https://{host}/search", params=params, headers=headers, timeout=TIMEOUT)
+            # /search-v2 (cursor-paginated) - the old /search 404s on current JSearch.
+            r = requests.get(f"https://{host}/search-v2", params=params, headers=headers, timeout=TIMEOUT)
             data = r.json()
         except Exception as e:
             print("WARN", s["name"], query, e)
@@ -264,11 +265,11 @@ def scan_jsearch(s):
         if data.get("status") != "OK":
             msg = data.get("error") or data.get("message") or data
             if "does not exist" in str(msg) or "not subscribed" in str(msg):
-                msg = (f"HTTP {r.status_code}: {msg}  (check on RapidAPI that the App whose key "
-                       f"this is - not just the account - is subscribed to JSearch)")
+                msg = (f"HTTP {r.status_code}: {msg}  (RapidAPI key not subscribed to JSearch, "
+                       f"or wrong endpoint)")
             print("WARN", s["name"], query, msg)
             continue
-        for job in data.get("data", []):
+        for job in (data.get("data") or {}).get("jobs", []):
             url = job.get("job_apply_link") or job.get("job_google_link") or ""
             title = job.get("job_title") or ""
             if url in seen or not _keeps(title, title_filter):
