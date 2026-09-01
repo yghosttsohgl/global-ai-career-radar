@@ -93,11 +93,16 @@ Each card shows the score, verdict badge, `🤖 AI-scored` / `📏 Rule-scored`,
 authorization + local-language read, strengths/gaps, the LLM's reasoning, and
 (for AI-scored jobs) suggested CV bullets. Results are paged 10 at a time.
 
-Each card also has an **application-status** dropdown — `Interested`, `Applied`,
-`Interviewing`, `Offer`, `Rejected`, `Not considered` — written straight to the
-`application_status` column in `data/jobs.sqlite3` (a scan or the scheduled DB
-commit never touches it). It shows as a badge on the card and drives the status
-filter and Datasette's `pipeline` query.
+Each card has an **application-status** dropdown in its top-right corner —
+`Interested`, `Applied`, `Interviewing`, `Offer`, `Rejected`, `Not considered` —
+written straight to the `application_status` column in `data/jobs.sqlite3` (a
+scan or the scheduled DB commit never touches it). It also drives the status
+filter and Datasette's `pipeline` query. The status changes how the card looks:
+
+- **Interested** — the card is highlighted (blue border + tint).
+- **Not considered** — the card is greyed out (hover to see it normally).
+- **Rejected** — the card is hidden everywhere, unless the status filter is set
+  to `Rejected`.
 
 ### Datasette (ad-hoc exploration)
 

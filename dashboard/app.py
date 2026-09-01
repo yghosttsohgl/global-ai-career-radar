@@ -137,6 +137,9 @@ def status_ok(j, status_filter):
 
 
 def passes(j, minimum, max_years, hide_senior, hide_native, status_filter):
+    # Rejected jobs drop out of every view unless you explicitly filter to them.
+    if (j["application_status"] or "") == "Rejected" and status_filter != "Rejected":
+        return None
     if not status_ok(j, status_filter):
         return None
     if combined_score(j) < minimum:
@@ -165,7 +168,26 @@ def _set_status(fingerprint):
     all_jobs.clear()
 
 
+def _card_style(fingerprint, status):
+    """Per-card scoped CSS: highlight 'Interested', dim 'Not considered'."""
+    sel = f".st-key-jobcard_{fingerprint}"
+    if status == "Interested":
+        return (
+            f"<style>{sel}, {sel} [data-testid=\"stVerticalBlockBorderWrapper\"] {{"
+            "border: 2px solid #2563eb !important; border-radius: 0.6rem;"
+            "background: rgba(37, 99, 235, 0.07);"
+            "box-shadow: 0 1px 10px rgba(37, 99, 235, 0.20); }</style>"
+        )
+    if status == "Not considered":
+        return (
+            f"<style>{sel} {{ opacity: 0.4; filter: grayscale(0.8); transition: opacity .15s, filter .15s; }}"
+            f"{sel}:hover {{ opacity: 1; filter: none; }}</style>"
+        )
+    return ""
+
+
 def render_card(j):
+    fp = j["fingerprint"]
     score = combined_score(j)
     verdict = combined_verdict(j)
     llm_scored = j["llm_score"] is not None
@@ -176,8 +198,22 @@ def render_card(j):
 
     score_color = VERDICT_COLOR.get(verdict, "gray")
 
-    with st.container(border=True):
-        st.markdown(f"### {j['title']}")
+    style = _card_style(fp, status)
+    if style:
+        st.html(style)
+
+    with st.container(border=True, key=f"jobcard_{fp}"):
+        top = st.columns([3, 1], vertical_alignment="center")
+        top[0].markdown(f"### {j['title']}")
+        skey = f"status_{fp}"
+        if skey not in st.session_state:
+            st.session_state[skey] = status
+        top[1].selectbox(
+            "Application status", STATUS_OPTIONS, key=skey,
+            on_change=_set_status, args=(fp,),
+            format_func=lambda s: s or "Set status…",
+            label_visibility="collapsed",
+        )
 
         badges = st.container(horizontal=True, vertical_alignment="center")
         badges.badge(verdict, color=score_color)
@@ -220,18 +256,8 @@ def render_card(j):
                 for bullet in j["llm_tailored_bullets"].split("|"):
                     st.markdown(f"- {bullet}")
 
-        foot = st.container(horizontal=True, vertical_alignment="center")
-        skey = f"status_{j['fingerprint']}"
-        if skey not in st.session_state:
-            st.session_state[skey] = status
-        foot.selectbox(
-            "Application status", STATUS_OPTIONS, key=skey,
-            on_change=_set_status, args=(j["fingerprint"],),
-            format_func=lambda s: s or "Set status…",
-            label_visibility="collapsed", width=200,
-        )
         if j["url"]:
-            foot.link_button("Open job posting", j["url"], icon=":material/open_in_new:")
+            st.link_button("Open job posting", j["url"], icon=":material/open_in_new:")
 
 
 def nav_css(selected):
