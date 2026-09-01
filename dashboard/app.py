@@ -43,13 +43,13 @@ MARKET_BLURB["Vienna"] = (
 # One accent colour per market. `rgb` drives the scoped button CSS; `badge` is the
 # nearest st.badge colour name for the heading. Unknown markets fall back to slate.
 MARKET_RGB = {
-    "Japan": "225,29,72",     # rose
+    "Japan": "147,51,234",    # purple
     "Austria": "37,99,235",   # blue
     "Remote": "13,148,136",   # teal
     "Vienna": "217,119,6",    # amber
 }
 DEFAULT_RGB = "100,116,139"   # slate
-MARKET_BADGE = {"Japan": "red", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
+MARKET_BADGE = {"Japan": "violet", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
 
 FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True}
 
@@ -72,6 +72,27 @@ def combined_verdict(j):
 
 def job_text(j):
     return f"{j['title']} {j['description'] or ''}"
+
+
+def auth_display(visa_status):
+    """Human-readable label + badge colour for a job's visa_status enum."""
+    return {
+        "NOT_NEEDED_FOR_USER": ("Work permit OK", "green"),
+        "CONFIRMED": ("Visa sponsored", "green"),
+        "UNKNOWN": ("Visa status unclear", "gray"),
+    }.get(visa_status, (str(visa_status).replace("_", " ").capitalize(), "gray"))
+
+
+def lang_display(country, requirement):
+    """Human-readable label + badge colour for a job's language_requirement enum."""
+    lang = LANG_LABEL.get(country, "Local language")
+    return {
+        "NOT_A_BARRIER_FOR_USER": ("No language barrier", "green"),
+        "ENGLISH_FRIENDLY": ("English-friendly", "green"),
+        "PREFERRED_OR_CONVERSATIONAL": (f"{lang} a plus", "gray"),
+        "BUSINESS_OR_HIGHER": (f"Business {lang} required", "gray"),
+        "UNKNOWN": (f"{lang} requirement unclear", "gray"),
+    }.get(requirement, (str(requirement).replace("_", " ").capitalize(), "gray"))
 
 
 def filter_values(country):
@@ -114,33 +135,37 @@ def render_card(j):
     senior = is_senior_title(j["title"])
     native = requires_native_language(j["country"], j["language_requirement"], job_text(j))
 
+    score_color = VERDICT_COLOR.get(verdict, "gray")
+
     with st.container(border=True):
-        head = st.container(horizontal=True, vertical_alignment="center")
-        head.markdown(f"### {round(score)}/100")
-        head.markdown(f"**{j['title']}**")
+        st.markdown(f"### {j['title']}")
 
         badges = st.container(horizontal=True)
-        badges.badge(verdict, color=VERDICT_COLOR.get(verdict, "gray"))
+        badges.badge(f"{round(score)} / 100", icon=":material/speed:", color=score_color)
+        badges.badge(verdict, color=score_color)
         if llm_scored:
             badges.badge("AI-scored", icon=":material/smart_toy:", color="violet")
         else:
             badges.badge("Rule-scored", icon=":material/rule:", color="gray")
         if senior:
-            badges.badge("Senior title", icon=":material/trending_up:", color="red")
+            badges.badge("Senior title", icon=":material/trending_up:", color="gray")
         if years:
-            badges.badge(f"{years}+ yrs wanted", icon=":material/schedule:",
-                         color="red" if years > 3 else "gray")
+            badges.badge(f"{years}+ yrs wanted", icon=":material/schedule:", color="gray")
         if native:
-            badges.badge("Native language", icon=":material/translate:", color="red")
+            badges.badge("Native language", icon=":material/translate:", color="gray")
 
-        st.caption(f"{j['company']} · {j['location'] or 'Location unknown'} · {j['country']}")
-
-        lang_label = LANG_LABEL.get(j["country"], "Local language")
         st.markdown(
-            f"**Authorization:** {j['visa_status']} &nbsp;·&nbsp; "
-            f"**{lang_label}:** {j['language_requirement']} &nbsp;·&nbsp; "
-            f"**Suggested CV:** {j['recommended_cv']}"
+            f":material/apartment: **{j['company']}** &nbsp;&nbsp;·&nbsp;&nbsp; "
+            f":material/place: **{j['location'] or 'Location unknown'}** &nbsp;&nbsp;·&nbsp;&nbsp; "
+            f":gray[{j['country']}]"
         )
+
+        meta = st.container(horizontal=True)
+        auth_label, auth_color = auth_display(j["visa_status"])
+        meta.badge(auth_label, icon=":material/verified_user:", color=auth_color)
+        lang_label, lang_color = lang_display(j["country"], j["language_requirement"])
+        meta.badge(lang_label, icon=":material/translate:", color=lang_color)
+        meta.badge(f"CV: {j['recommended_cv']}", icon=":material/description:", color="gray")
 
         if j["llm_reasoning"]:
             st.caption(f":material/smart_toy: {j['llm_reasoning']}")
