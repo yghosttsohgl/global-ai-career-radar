@@ -87,6 +87,8 @@ values are unchanged. Filters:
 - **Hide senior / lead titles** (default on).
 - **Hide native-language roles** (default on) — roles needing business/native
   German or Japanese.
+- **Hide 'Not considered' roles** (default off) — drop `Not considered` jobs
+  entirely instead of just greying them.
 - **Application status** — show only jobs at a chosen pipeline stage (or `Unset`).
 
 Each card shows the score, verdict badge, `🤖 AI-scored` / `📏 Rule-scored`, the
