@@ -90,6 +90,9 @@ values are unchanged. Filters:
 - **Hide 'Not considered' roles** (default off) — drop `Not considered` jobs
   entirely instead of just greying them.
 - **Application status** — show only jobs at a chosen pipeline stage (or `Unset`).
+- **Show requirements** (default off) — expands each card with the posting's
+  requirements/profile section (best-effort extraction) plus its full text, so
+  you can skim requirements without opening every posting.
 
 Each card shows the score, verdict badge, `🤖 AI-scored` / `📏 Rule-scored`, the
 authorization + local-language read, strengths/gaps, the LLM's reasoning, and
