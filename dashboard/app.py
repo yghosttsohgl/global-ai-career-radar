@@ -71,7 +71,8 @@ MARKET_RGB = {
 DEFAULT_RGB = "100,116,139"   # slate
 MARKET_BADGE = {"Japan": "violet", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
 
-FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True, "status": "All"}
+FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True,
+                   "status": "All", "hnc": False}
 STATUS_FILTER_OPTIONS = ["All", "Unset"] + STATUS_OPTIONS[1:]
 
 init()
@@ -124,6 +125,7 @@ def filter_values(country):
         st.session_state.get(f"snr_{country}", FILTER_DEFAULTS["snr"]),
         st.session_state.get(f"nat_{country}", FILTER_DEFAULTS["nat"]),
         st.session_state.get(f"status_filter_{country}", FILTER_DEFAULTS["status"]),
+        st.session_state.get(f"hnc_{country}", FILTER_DEFAULTS["hnc"]),
     )
 
 
@@ -136,9 +138,12 @@ def status_ok(j, status_filter):
     return s == status_filter
 
 
-def passes(j, minimum, max_years, hide_senior, hide_native, status_filter):
+def passes(j, minimum, max_years, hide_senior, hide_native, status_filter, hide_not_considered):
+    s = j["application_status"] or ""
     # Rejected jobs drop out of every view unless you explicitly filter to them.
-    if (j["application_status"] or "") == "Rejected" and status_filter != "Rejected":
+    if s == "Rejected" and status_filter != "Rejected":
+        return None
+    if s == "Not considered" and hide_not_considered and status_filter != "Not considered":
         return None
     if not status_ok(j, status_filter):
         return None
@@ -179,10 +184,7 @@ def _card_style(fingerprint, status):
             "box-shadow: 0 1px 10px rgba(37, 99, 235, 0.20); }</style>"
         )
     if status == "Not considered":
-        return (
-            f"<style>{sel} {{ opacity: 0.4; filter: grayscale(0.8); transition: opacity .15s, filter .15s; }}"
-            f"{sel}:hover {{ opacity: 1; filter: none; }}</style>"
-        )
+        return f"<style>{sel} {{ opacity: 0.45; filter: grayscale(0.85); }}</style>"
     return ""
 
 
@@ -315,14 +317,15 @@ def render_filters(country):
         )
         hide_senior = st.toggle("Hide senior / lead titles", value=FILTER_DEFAULTS["snr"], key=f"snr_{country}")
         hide_native = st.toggle("Hide native-language roles", value=FILTER_DEFAULTS["nat"], key=f"nat_{country}")
+        hide_nc = st.toggle("Hide 'Not considered' roles", value=FILTER_DEFAULTS["hnc"], key=f"hnc_{country}")
         status_filter = st.selectbox(
             "Application status", STATUS_FILTER_OPTIONS,
             format_func=lambda s: s or "Set status…", key=f"status_filter_{country}",
         )
-    return minimum, max_years, hide_senior, hide_native, status_filter
+    return minimum, max_years, hide_senior, hide_native, status_filter, hide_nc
 
 
-def render_listing(country, minimum, max_years, hide_senior, hide_native, status_filter):
+def render_listing(country, minimum, max_years, hide_senior, hide_native, status_filter, hide_nc):
     st.badge(MARKET_LABELS[country], icon=MARKET_ICONS[country],
              color=MARKET_BADGE.get(country, "gray"))
     if country in MARKET_BLURB:
@@ -335,7 +338,7 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native, status
 
     kept, dropped = [], 0
     for j in data:
-        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter)
+        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter, hide_nc)
         if verdict is None:
             continue
         if verdict is False:
