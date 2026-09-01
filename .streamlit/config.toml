@@ -1,0 +1,15 @@
+# Dashboard theme. Only the accent colour is overridden - Streamlit still
+# derives the light/dark palettes, and the mode toggle stays available because
+# primaryColor is set under both [theme.light] and [theme.dark].
+#
+# The accent drives sliders, toggles and other active widgets in the Filters
+# panel (Streamlit's default is a bright red).
+
+[theme]
+primaryColor = "#6F4E37"   # coffee brown
+
+[theme.light]
+primaryColor = "#6F4E37"
+
+[theme.dark]
+primaryColor = "#B08968"   # lighter tan, for contrast on dark backgrounds

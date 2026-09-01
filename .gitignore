@@ -1,5 +1,6 @@
 .venv/
 .env
+.streamlit/secrets.toml
 __pycache__/
 *.pyc
 # Auto-created by the Streamlit dev skill; symlinks into .venv

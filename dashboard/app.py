@@ -138,10 +138,11 @@ def render_card(j):
     score_color = VERDICT_COLOR.get(verdict, "gray")
 
     with st.container(border=True):
-        st.markdown(f"### {j['title']}")
+        head = st.container(horizontal=True, vertical_alignment="center")
+        head.header(f":{score_color}[{round(score)}%]", anchor=False)
+        head.markdown(f"#### {j['title']}")
 
         badges = st.container(horizontal=True)
-        badges.badge(f"{round(score)} / 100", icon=":material/speed:", color=score_color)
         badges.badge(verdict, color=score_color)
         if llm_scored:
             badges.badge("AI-scored", icon=":material/smart_toy:", color="violet")
