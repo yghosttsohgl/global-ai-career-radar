@@ -141,12 +141,12 @@ def render_card(j):
         st.markdown(f"### {j['title']}")
 
         badges = st.container(horizontal=True, vertical_alignment="center")
-        badges.markdown(f":{score_color}[**{round(score)}%**]")
         badges.badge(verdict, color=score_color)
         if llm_scored:
             badges.badge("AI-scored", icon=":material/smart_toy:", color="violet")
         else:
             badges.badge("Rule-scored", icon=":material/rule:", color="gray")
+        badges.markdown(f":{score_color}[**{round(score)}%**]")
         if senior:
             badges.badge("Senior title", icon=":material/trending_up:", color="gray")
         if years:
