@@ -1,0 +1,236 @@
+# Which job boards to scan. Each entry's `type:` selects a scanner in
+# radar/scanners/ (run `python -c "from radar.scanners import SCANNER_REGISTRY;
+# print(sorted(SCANNER_REGISTRY))"` for the list); the other keys are that
+# scanner's parameters. `country:` must match a market in profile/scoring.yaml.
+# Optional `endpoint:` overrides the scanner's default base URL.
+#
+# Broad-tech + ops search: AI/ML, QA/testing, Salesforce/CRM, software dev,
+# product/program/project management, data and operations roles all count.
+# Relevance is judged by radar/scoring.py + the LLM pass, so title_filter here
+# is only a coarse "is this remotely in scope" cut on big general boards.
+
+TECH_OPS_TITLES: &tech_ops_titles
+  - "product manager"
+  - "product owner"
+  - "program manager"
+  - "project manager"
+  - "プロダクトマネージャー"
+  - "プロジェクトマネージャー"
+  - "machine learning"
+  - "ml engineer"
+  - "ai "
+  - "/ ai"
+  - "nlp"
+  - "llm"
+  - "data scien"
+  - "data engineer"
+  - "data analyst"
+  - "機械学習"
+  - "qa engineer"
+  - "quality"
+  - "test engineer"
+  - "sdet"
+  - "salesforce"
+  - "crm"
+  - "software engineer"
+  - "developer"
+  - "engineer"
+  - "backend"
+  - "frontend"
+  - "full stack"
+  - "full-stack"
+  - "architect"
+  - "research"
+  - "technical staff"
+  - "analyst"
+  - "operations"
+  - "localization"
+  - "localisation"
+
+sources:
+  # ---------------- Japan ----------------
+  - name: Anthropic Careers
+    type: greenhouse
+    board: anthropic
+    country: Japan
+    # Anthropic's board lists jobs worldwide; only keep postings whose office
+    # location mentions one of these (case-insensitive substring match).
+    location_filter: ["japan", "tokyo"]
+    enabled: true
+
+  - name: Sakana AI Careers
+    type: html_list
+    url: https://sakana.ai/careers/
+    country: Japan
+    location: Tokyo
+    # Only anchors matching this path are real job postings (excludes nav,
+    # the careers index itself, etc).
+    link_pattern: '^/careers/[a-z0-9-]+/?$'
+    enabled: true
+
+  - name: Japan Dev
+    type: japandev
+    country: Japan
+    # English-friendly Japan tech jobs (JSON API). Japanese-only postings are
+    # dropped by the scanner; title_filter trims non-tech/ops roles.
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: OpenAI Japan
+    type: ashby
+    board: openai
+    country: Japan
+    location_filter: ["tokyo", "japan"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: JSearch Japan
+    type: jsearch
+    country: Japan
+    # Aggregator API via RapidAPI (wraps Google for Jobs -> Indeed, LinkedIn,
+    # Glassdoor...). Needs RAPIDAPI_KEY (free account, no website required);
+    # skipped if unset. Free tier is ~200 req/mo, so keep the query list short.
+    jsearch_country: jp
+    location: Japan
+    date_posted: month
+    queries:
+      - "software engineer in Tokyo, Japan"
+      - "QA engineer in Japan"
+      - "machine learning engineer in Japan"
+      - "product manager in Tokyo, Japan"
+      - "localization OR data engineer in Japan"
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  # Careerjet's Publisher program requires running a website that displays their
+  # listings - not viable for a private tool. Kept disabled as a template in
+  # case that changes. Needs CAREERJET_API_KEY.
+  - name: Careerjet Japan
+    type: careerjet
+    country: Japan
+    locale_code: en_JP
+    location: Tokyo
+    queries: ["software engineer", "qa engineer", "machine learning", "product manager",
+              "data engineer", "localization", "devops", "salesforce"]
+    title_filter: *tech_ops_titles
+    enabled: false
+
+  - name: PayPay Careers
+    type: greenhouse
+    board: paypay
+    country: Japan
+    # Tokyo-based, English-friendly workplace. ~85 roles spanning
+    # finance/HR/audit - title_filter keeps it to tech + ops.
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  # ---------------- Austria / EU ----------------
+  - name: Cohere Careers
+    type: ashby
+    board: cohere
+    # "Austria" is used here as the EU / work-permit bucket - Cohere's European
+    # roles are Berlin/Munich/Paris/London/remote-Europe, plus a few in Tokyo.
+    country: Austria
+    location_filter:
+      - "austria"
+      - "vienna"
+      - "germany"
+      - "berlin"
+      - "munich"
+      - "europe"
+      - "tokyo"
+      - "japan"
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: OpenAI Europe
+    type: ashby
+    board: openai
+    # EU / work-permit bucket (see Cohere note). OpenAI EU offices: Dublin,
+    # London, Munich, Zurich, Paris, Brussels.
+    country: Austria
+    location_filter: ["dublin", "london", "munich", "berlin", "zurich", "paris",
+                      "brussels", "vienna", "austria", "emea", "remote"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Perplexity Careers
+    type: ashby
+    board: perplexity
+    country: Austria
+    location_filter: ["london", "berlin", "belgrade", "munich", "paris", "dublin",
+                      "vienna", "austria", "tokyo", "japan", "emea", "remote"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: karriere.at Vienna
+    type: karriere_at
+    country: Austria
+    # One source, many keyword categories - Austria's biggest board. Results
+    # are de-duped by job URL within the run. Add/remove categories freely;
+    # each is https://www.karriere.at/jobs/{slug}/wien
+    urls:
+      - https://www.karriere.at/jobs/k%C3%BCnstliche-intelligenz/wien
+      - https://www.karriere.at/jobs/maschinelles-lernen/wien
+      - https://www.karriere.at/jobs/software-entwicklung/wien
+      - https://www.karriere.at/jobs/qualitaetssicherung-test/wien
+      - https://www.karriere.at/jobs/qualitatsmanagement/wien
+      - https://www.karriere.at/jobs/salesforce/wien
+      - https://www.karriere.at/jobs/projektmanagement/wien
+      - https://www.karriere.at/jobs/produktmanagement/wien
+      - https://www.karriere.at/jobs/business-analyse/wien
+      - https://www.karriere.at/jobs/datenanalyse/wien
+      - https://www.karriere.at/jobs/devops/wien
+    enabled: true
+
+  - name: Adzuna Austria
+    type: adzuna
+    country: Austria
+    # Aggregator API - pulls Indeed AT, StepStone, CareerBuilder, ... Needs
+    # ADZUNA_APP_ID + ADZUNA_APP_KEY (free, https://developer.adzuna.com);
+    # skipped if unset. Adzuna has no Japan endpoint.
+    adzuna_country: at
+    where: Wien
+    max_days_old: 30
+    queries: ["software developer", "qa test engineer", "salesforce", "data analyst",
+              "machine learning", "project manager", "product manager", "devops", "business analyst"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  # Disabled - Careerjet needs a publisher website (see the Careerjet Japan note).
+  - name: Careerjet Austria
+    type: careerjet
+    country: Austria
+    locale_code: de_AT
+    location: Wien
+    queries: ["software", "qa test", "salesforce", "data", "machine learning",
+              "projektmanagement", "produktmanagement", "devops", "business analyse"]
+    title_filter: *tech_ops_titles
+    enabled: false
+
+  - name: AI Austria Jobs
+    type: aiaustria
+    url: https://aiaustria.com/jobs
+    country: Austria
+    enabled: true
+
+  # ---------------- Remote (any location, taken with the EU work permit) ----------------
+  - name: Remotive
+    type: remotive
+    country: Remote
+    # Keyless curated remote-job API. location_filter matches the role's
+    # candidate_required_location - keep Worldwide/Europe/EMEA, drop "USA only".
+    categories: ["software-dev", "devops", "data", "product", "qa", "customer-support"]
+    location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria", "apac"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Himalayas
+    type: himalayas
+    country: Remote
+    # Keyless, ~100k remote jobs, date-sorted. Pages through the most recent
+    # max_pages*20 and keeps the region-eligible tech/ops roles.
+    max_pages: 25
+    location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"]
+    title_filter: *tech_ops_titles
+    enabled: true

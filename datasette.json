@@ -1,0 +1,38 @@
+{
+  "title": "Global AI Career Radar",
+  "description": "Ad-hoc exploration of the job database. See the Streamlit dashboard for the ranked candidate view.",
+  "databases": {
+    "jobs": {
+      "tables": {
+        "jobs": {
+          "sort_desc": "rule_score",
+          "facets": ["country", "source", "llm_verdict", "recommendation", "visa_status", "language_requirement", "recommended_cv"],
+          "label_column": "title"
+        }
+      },
+      "queries": {
+        "ranked": {
+          "title": "APPLY / CONSIDER, ranked by score",
+          "sql": "SELECT round(coalesce(llm_score, rule_score)) AS score, coalesce(llm_verdict, recommendation) AS verdict, country, title, company, coalesce(llm_reasoning, reason) AS why, replace(gaps, '|', '; ') AS gaps, url FROM jobs WHERE coalesce(llm_verdict, recommendation) IN ('APPLY', 'CONSIDER') ORDER BY score DESC"
+        },
+        "to_score": {
+          "title": "Jobs awaiting LLM scoring (rule_score >= 40, no llm_score)",
+          "sql": "SELECT round(rule_score) AS rule_score, country, title, company, replace(strengths, '|', '; ') AS strengths, url FROM jobs WHERE llm_score IS NULL AND rule_score >= 40 ORDER BY rule_score DESC"
+        },
+        "by_source": {
+          "title": "Jobs per source, with average score and scored count",
+          "sql": "SELECT source, count(*) AS jobs, sum(llm_score IS NOT NULL) AS llm_scored, round(avg(coalesce(llm_score, rule_score)), 1) AS avg_score FROM jobs GROUP BY source ORDER BY jobs DESC"
+        },
+        "verdicts_by_country": {
+          "title": "Verdict breakdown by country",
+          "sql": "SELECT country, coalesce(llm_verdict, recommendation, 'UNSCORED') AS verdict, count(*) AS n FROM jobs GROUP BY country, verdict ORDER BY country, n DESC"
+        },
+        "search_description": {
+          "title": "Full-text-ish search of the job description",
+          "sql": "SELECT round(coalesce(llm_score, rule_score)) AS score, country, title, company, url FROM jobs WHERE lower(title || ' ' || company || ' ' || description) LIKE '%' || lower(:term) || '%' ORDER BY score DESC",
+          "params": ["term"]
+        }
+      }
+    }
+  }
+}
