@@ -1,0 +1,201 @@
+# Scoring configuration for the Global AI Career Radar.
+#
+# This file, together with profile/master_profile.yaml and
+# profile/cv_versions.yaml, is everything that is specific to one applicant.
+# Swap all three (and the sources in sources.yaml) to run the radar for
+# someone else - no code changes needed.
+#
+# radar/scoring.py is a generic engine that reads this file. After editing it,
+# run `python -m radar.cli rescore` to re-score every stored job.
+
+# Roughly how many years of professional experience the applicant has. Roles
+# asking for meaningfully more get the years penalty below.
+candidate_years: 3
+
+thresholds:
+  llm_floor: 40   # minimum rule_score for a job to reach the LLM scoring pass
+  apply: 75       # rule_score >= this -> recommendation APPLY
+  consider: 50    # rule_score >= this -> CONSIDER (else SKIP)
+
+# --- Keyword groups -----------------------------------------------------------
+# Each group whose keywords appear (case-insensitive) in "title company
+# description" adds its points ONCE. Points stack, final score is capped at 100.
+# `label` is stored in the job's strengths list when the group matches.
+keyword_groups:
+  - label: "AI / GenAI / NLP / ML"
+    points: 22
+    keywords: [llm, genai, "generative ai", "machine learning", "ml engineer", nlp,
+               大模型, 大语言模型, 人工智能, 自然语言]
+  - label: "AI model evaluation / quality"
+    points: 15
+    keywords: ["model evaluation", "model quality", "ai quality", benchmark, "eval harness",
+               评测, 模型评估, 模型效果]
+  - label: "Speech (TTS / ASR)"
+    points: 12
+    keywords: [tts, asr, speech, voice, 语音, 语音识别, 语音合成]
+  - label: "QA / Testing / Test automation"
+    points: 25
+    keywords: ["qa engineer", "quality assurance", "test engineer", sdet, "test automation",
+               "manual testing", "automated test", "integration test", "unit test", "api testing",
+               "end-to-end test", "e2e test", playwright, selenium, cypress, postman,
+               "test case", "test plan", 测试, 质量保证]
+  - label: "Salesforce / CRM / low-code"
+    points: 25
+    keywords: [salesforce, apex, lightning, "sales cloud", "service cloud", mulesoft,
+               low-code, no-code, "dynamics 365", "crm platform", "crm developer",
+               "crm administrator", hubspot]
+  - label: "Software engineering"
+    points: 18
+    keywords: ["software engineer", "software developer", backend, front-end, frontend,
+               "full stack", full-stack, "web developer", python, javascript, typescript,
+               "rest api", sql, "git "]
+  - label: "Product / Program / Project management"
+    points: 18
+    keywords: ["product manager", "product owner", "technical product", "program manager",
+               "project manager", "delivery manager", "scrum master", "project lead",
+               产品经理, 项目经理, 项目管理, プロジェクトマネージャ, プロダクトマネージャ]
+  - label: "Data (analysis / quality / annotation)"
+    points: 15
+    keywords: ["data analyst", "data engineer", "data quality", analytics, "business intelligence",
+               dashboard, etl, "data pipeline", annotation, "data labeling", labelling,
+               数据分析, 数据标注]
+  - label: "Operations / Business operations"
+    points: 15
+    keywords: ["operations manager", "business operations", revops, bizops, "sales operations",
+               "process improvement", "process automation", "workflow automation", "business process",
+               "operational excellence", 运营, 业务运营]
+  - label: "Localization / i18n / linguistic"
+    points: 20
+    keywords: [localization, localisation, i18n, l10n, internationalization,
+               translation, linguist, "machine translation", "language quality", transcreation,
+               本地化, ローカライズ]
+  - label: "DevOps / Cloud"
+    points: 12
+    keywords: [devops, kubernetes, docker, aws, gcp, azure, "ci/cd", terraform,
+               "cloud engineer", "site reliability"]
+  - label: "Agile tooling / process"
+    points: 6
+    keywords: [jira, confluence, agile, scrum, kanban]
+  - label: "English-friendly / international team"
+    points: 10
+    keywords: [english, "international team", "english is the working language", 英文]
+  - label: "Visa sponsorship / relocation mentioned"
+    points: 15
+    keywords: ["visa sponsorship", "visa support", "work visa", "relocation support",
+               "relocation package", 签证, 工作许可, 工作签证]
+  - label: "Multilingual asset"
+    points: 8
+    keywords: [bilingual, trilingual, mandarin, "chinese language", "japanese language",
+               "german language", 日本語, 中文, deutsch]
+
+# --- Markets -----------------------------------------------------------------
+# Keys must match the `country:` values used by sources in sources.yaml.
+# visa:
+#   not_needed           -> visa_status NOT_NEEDED_FOR_USER, no gap
+#   confirm_if_mentioned -> CONFIRMED if a visa cue is in the text, else UNKNOWN + gap
+#   verify               -> always UNKNOWN + gap
+# score_bonus: flat points added for jobs in this market.
+# language: omit (or null) for markets with no local-language barrier for the
+#   applicant (returns language_requirement NOT_A_BARRIER_FOR_USER). Otherwise
+#   provide cue lists; a business_or_higher hit records `gap`.
+# native_language_ok: true  -> the applicant is a native speaker of this
+#   market's language, so "native language required" is never counted as a gap.
+markets:
+  Japan:
+    visa: confirm_if_mentioned
+    score_bonus: 0
+    language:
+      label: Japanese
+      gap: "Requires business-level+ Japanese; current speaking/writing is weak"
+      business_or_higher: ["native japanese", "business japanese", "business-level japanese",
+                           "fluent japanese", "jlpt n1", 商务日语, 日语n1, ビジネスレベルの日本語]
+      preferred_or_conversational: ["japanese preferred", "conversational japanese",
+                                    日语优先, 日语加分, 日常会話レベル]
+      english_friendly: ["no japanese required", "english only", "english is the working language",
+                         英文工作, "no japanese ability required"]
+  Austria:
+    visa: not_needed
+    score_bonus: 5
+    score_bonus_label: "Austria: no visa required"
+    language:
+      label: German
+      gap: "Requires business-level+ German; candidate is B1 (targeting B2)"
+      business_or_higher: [verhandlungssicher, "fließend deutsch", "fliessend deutsch",
+                           "sehr gute deutschkenntnisse", "ausgezeichnete deutschkenntnisse",
+                           "muttersprache deutsch", "deutsch auf muttersprachniveau",
+                           "c1 deutsch", "deutsch c1", "c2 deutsch", "deutsch c2",
+                           "fluent german", "native german", "excellent german", "business-level german"]
+      preferred_or_conversational: ["gute deutschkenntnisse", "deutschkenntnisse von vorteil",
+                                    "grundkenntnisse deutsch", "deutsch erwünscht", "deutsch von vorteil",
+                                    "b2 deutsch", "deutsch b2", "german is a plus", "conversational german"]
+      english_friendly: ["english is the working language", "englisch als arbeitssprache",
+                         "no german required", "german not required", "kein deutsch erforderlich",
+                         "english-speaking team", "no german skills required"]
+  Remote:
+    visa: not_needed
+    score_bonus: 0
+    # no `language:` - Remote roles impose no local-language gate
+
+# Any country not listed in `markets` falls back to this.
+default_market:
+  visa: verify
+  visa_gap: "Work authorization not confirmed - verify before applying"
+  score_bonus: 0
+
+# Cues that mark a job as visa-sponsoring (used by visa: confirm_if_mentioned).
+visa_cues: ["visa sponsorship", "visa support", "work visa support"]
+
+# --- Overreach penalty ------------------------------------------------------
+# Subtracted from the rule score (floored at 0); each trigger also adds a gap.
+overreach_penalty:
+  # years asked for (N) beyond candidate_years: penalty = years_base + years_step * (N - candidate_years), capped
+  years_base: 10
+  years_step: 6
+  years_cap: 35
+  senior_title: 15
+  native_language: 20
+
+# Title tokens that mark a role as too senior. Regex, case-insensitive.
+senior_title_pattern: '\b(senior|snr|sr|principal|lead|head|director|vp|vice[- ]president|distinguished|chief)\b'
+
+# Cues (case-insensitive substrings) that mean a native/business local language
+# is required, independent of the per-market screen.
+native_language_cues: [native, "native speaker", "native-level", "native level",
+                       "native proficiency", "native fluency", "mother tongue",
+                       母語, 母语, ネイティブ, 母国語,
+                       muttersprache, muttersprachlich, "auf muttersprachniveau"]
+
+# --- CV version selection --------------------------------------------------
+# First rule whose keywords appear (in "title description") wins; else the
+# per-market fallback; else `default`. Names should match profile/cv_versions.yaml.
+cv_selection:
+  default: "AI / LLM Product"
+  by_market:
+    Japan: "Japan-focused"
+  rules:
+    - cv: "AI / NLP / Evaluation"
+      keywords: [evaluation, nlp, speech, tts, asr, "machine translation",
+                 localization, localisation, linguist]
+    - cv: "Technical / Software"
+      keywords: [salesforce, apex, "qa engineer", "quality assurance", "test engineer", sdet,
+                 software, backend, frontend, "full stack", full-stack, api, developer,
+                 python, sql, devops, kubernetes]
+    - cv: "AI / LLM Product"
+      keywords: ["product manager", "program manager", "project manager", "product owner"]
+
+# --- LLM scoring pass ------------------------------------------------------
+llm:
+  model: claude-opus-5
+  # Free text appended to the LLM system prompt after the applicant profile.
+  # Spell out the hard constraints the model must weigh (visa, language,
+  # seniority). Keep it consistent with the markets config above.
+  hard_constraints: |
+    Weigh these hard constraints heavily:
+    - Japan roles: flag any requirement for business-level or higher spoken/written Japanese as
+      a real gap (the candidate has JLPT N1 but weak speaking/writing). Only treat visa sponsorship
+      as confirmed if the posting explicitly says so.
+    - Austria roles: no visa gap - the candidate already holds an unrestricted work permit.
+      But flag any requirement for fluent/business-level German (C1+) as a real gap - the candidate
+      is currently B1, working toward B2. German-friendly or English-working-language roles are fine.
+    - Any other location: work authorization is unverified - list it as a gap unless the posting
+      explicitly confirms it.

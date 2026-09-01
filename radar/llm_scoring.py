@@ -9,10 +9,11 @@ import os
 import anthropic
 import yaml
 
+from .config import profile as _profile, scoring as _scoring
 from .db import con, init
 
-MODEL = os.environ.get("RADAR_LLM_MODEL", "claude-opus-5")
-RULE_SCORE_FLOOR = 40
+MODEL = os.environ.get("RADAR_LLM_MODEL") or _scoring()["llm"].get("model", "claude-opus-5")
+RULE_SCORE_FLOOR = _scoring()["thresholds"]["llm_floor"]
 
 RESULT_SCHEMA = {
     "type": "object",
@@ -30,24 +31,15 @@ RESULT_SCHEMA = {
 
 
 def _profile_text():
-    with open("profile/master_profile.yaml", encoding="utf8") as f:
-        profile = yaml.safe_load(f)["profile"]
-    return yaml.safe_dump(profile, allow_unicode=True, sort_keys=False)
+    return yaml.safe_dump(_profile(), allow_unicode=True, sort_keys=False)
 
 
 def _system_prompt():
+    constraints = (_scoring()["llm"].get("hard_constraints") or "").strip()
     return (
         "You are a careful, honest job-matching assistant for one specific candidate. "
         "Given the candidate's profile and one job posting, evaluate fit for THAT candidate only.\n\n"
-        "Weigh these hard constraints heavily:\n"
-        "- Japan roles: flag any requirement for business-level or higher spoken/written Japanese as "
-        "a real gap (the candidate has JLPT N1 but weak speaking/writing). Only treat visa sponsorship "
-        "as confirmed if the posting explicitly says so.\n"
-        "- China roles: work authorization is unverified - always list it as a gap unless the posting "
-        "explicitly confirms it.\n"
-        "- Austria roles: no visa gap - the candidate already holds an unrestricted work permit. "
-        "But flag any requirement for fluent/business-level German (C1+) as a real gap - the candidate "
-        "is currently B1, working toward B2. German-friendly or English-working-language roles are fine.\n\n"
+        f"{constraints}\n\n"
         "Be specific and honest in gaps; do not paper over missing requirements. tailored_bullets must be "
         "2-3 short CV bullet points drawn only from the candidate's real experience below, phrased to speak "
         "directly to this job's stated requirements - never invent experience the candidate doesn't have.\n\n"

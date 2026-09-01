@@ -4,12 +4,10 @@ profile:
   target_markets:
     - Japan
     - Austria
-    - China
 
   work_authorization:
     Austria: "Unrestricted work permit"
     Japan: "Requires appropriate Japan work authorization; verify per job"
-    China: "Unknown; verify per job"
 
   languages:
     Japanese:
@@ -208,12 +206,6 @@ profile:
       english_friendly: true
       german_level: "B1, improving to B2 - can take German-friendly roles, not yet German-only"
       visa_sponsorship_required: false
-
-    China:
-      mandarin_friendly: true
-      international_roles_preferred: true
-      work_authorization: "Verify per job"
-      sourcing_note: "Big Chinese boards can't be auto-scanned; found via manual import."
 
   profile_update_notes:
     - "Add new projects here as they are completed."

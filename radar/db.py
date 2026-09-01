@@ -37,7 +37,7 @@ def init():
             description TEXT,
             language_requirement TEXT,
             visa_status TEXT,
-            china_work_authorization TEXT,
+            work_authorization TEXT,
             first_seen TEXT,
             last_seen TEXT,
             rule_score REAL,
@@ -51,12 +51,14 @@ def init():
 
     existing_cols = {row["name"] for row in c.execute("PRAGMA table_info(jobs)")}
 
-    # Renamed: japanese_requirement -> language_requirement (the relevant
-    # language depends on the job's country - German for Austria, etc).
-    if "japanese_requirement" in existing_cols and "language_requirement" not in existing_cols:
-        c.execute("ALTER TABLE jobs RENAME COLUMN japanese_requirement TO language_requirement")
-        existing_cols.discard("japanese_requirement")
-        existing_cols.add("language_requirement")
+    # Renamed columns: old -> new. The relevant language / work authorization
+    # depends on the job's market, so the market-specific names were generalised.
+    for old, new in (("japanese_requirement", "language_requirement"),
+                     ("china_work_authorization", "work_authorization")):
+        if old in existing_cols and new not in existing_cols:
+            c.execute(f"ALTER TABLE jobs RENAME COLUMN {old} TO {new}")
+            existing_cols.discard(old)
+            existing_cols.add(new)
 
     for name, coltype in NEW_COLUMNS:
         if name not in existing_cols:
@@ -78,7 +80,7 @@ def save(j):
     c.execute("""
         INSERT INTO jobs (
             fingerprint, title, company, location, country, url, source, source_access,
-            description, language_requirement, visa_status, china_work_authorization,
+            description, language_requirement, visa_status, work_authorization,
             first_seen, last_seen, rule_score, recommendation, recommended_cv,
             strengths, gaps, reason
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -93,7 +95,7 @@ def save(j):
             description=excluded.description,
             language_requirement=excluded.language_requirement,
             visa_status=excluded.visa_status,
-            china_work_authorization=excluded.china_work_authorization,
+            work_authorization=excluded.work_authorization,
             last_seen=excluded.last_seen,
             rule_score=excluded.rule_score,
             recommendation=excluded.recommendation,
@@ -113,7 +115,7 @@ def save(j):
         j.description,
         j.language_requirement,
         j.visa_status,
-        j.china_work_authorization,
+        j.work_authorization,
         j.first_seen.isoformat(),
         j.last_seen.isoformat(),
         j.rule_score,

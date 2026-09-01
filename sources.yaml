@@ -1,3 +1,9 @@
+# Which job boards to scan. Each entry's `type:` selects a scanner in
+# radar/scanners/ (run `python -c "from radar.scanners import SCANNER_REGISTRY;
+# print(sorted(SCANNER_REGISTRY))"` for the list); the other keys are that
+# scanner's parameters. `country:` must match a market in profile/scoring.yaml.
+# Optional `endpoint:` overrides the scanner's default base URL.
+#
 # Broad-tech + ops search: AI/ML, QA/testing, Salesforce/CRM, software dev,
 # product/program/project management, data and operations roles all count.
 # Relevance is judged by radar/scoring.py + the LLM pass, so title_filter here
@@ -116,18 +122,6 @@ sources:
     # Tokyo-based, English-friendly workplace. ~85 roles spanning
     # finance/HR/audit - title_filter keeps it to tech + ops.
     title_filter: *tech_ops_titles
-    enabled: true
-
-  # ---------------- China (automated sourcing not viable; see notes) ----------------
-  # The big Chinese boards (51job, Zhaopin, BOSS Zhipin, Liepin) are app-first
-  # with aggressive anti-bot protection and can't be scraped from a cron.
-  # Use the dashboard's Manual Import tab for China roles. Duolingo's Beijing
-  # hub is the one automated China source.
-  - name: Duolingo Careers
-    type: greenhouse
-    board: duolingo
-    country: China
-    location_filter: ["beijing", "china", "tokyo", "japan"]
     enabled: true
 
   # ---------------- Austria / EU ----------------
