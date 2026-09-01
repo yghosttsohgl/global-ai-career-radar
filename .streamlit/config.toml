@@ -6,10 +6,10 @@
 # panel (Streamlit's default is a bright red).
 
 [theme]
-primaryColor = "#4B5563"   # dark grey
+primaryColor = "#9CA3AF"   # mid grey
 
 [theme.light]
-primaryColor = "#4B5563"   # dark grey on white
+primaryColor = "#9CA3AF"   # mid grey on white
 
 [theme.dark]
-primaryColor = "#9CA3AF"   # lighter grey, for contrast on dark backgrounds
+primaryColor = "#CBD5E1"   # lighter grey, for contrast on dark backgrounds
