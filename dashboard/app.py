@@ -111,8 +111,8 @@ def lang_display(country, requirement):
     return {
         "NOT_A_BARRIER_FOR_USER": ("No language barrier", "green"),
         "ENGLISH_FRIENDLY": ("English-friendly", "green"),
-        "PREFERRED_OR_CONVERSATIONAL": (f"{lang} a plus", "gray"),
-        "BUSINESS_OR_HIGHER": (f"Business {lang} required", "gray"),
+        "PREFERRED_OR_CONVERSATIONAL": (f"{lang} expected (B1/B2 ok)", "gray"),
+        "BUSINESS_OR_HIGHER": (f"Near-native {lang} required", "orange"),
         "UNKNOWN": (f"{lang} requirement unclear", "gray"),
     }.get(requirement, (str(requirement).replace("_", " ").capitalize(), "gray"))
 

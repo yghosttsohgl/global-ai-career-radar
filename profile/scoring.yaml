@@ -174,8 +174,10 @@ markets:
 
   # Local part-time / stopgap jobs in Vienna (hospitality, retail, service).
   # Judged differently from career roles - see llm.hard_constraints. No visa
-  # barrier; B1 German is enough for most of these so no `language:` block, but
-  # the global native_language_cues still flag "Muttersprache Deutsch"-type asks.
+  # barrier. German still matters here: B1/B2 is fine (PREFERRED_OR_CONVERSATIONAL,
+  # no penalty), but near-native asks ("sehr gute"/"perfekte"/C1+/Muttersprache)
+  # are a real gap. A job that says nothing about German -> UNKNOWN, not
+  # "no barrier".
   Vienna:
     visa: not_needed
     score_bonus: 5
@@ -184,6 +186,28 @@ markets:
     thresholds:
       apply: 45
       consider: 30
+    language:
+      label: German
+      gap: "Requires near-native/C1+ German; candidate is B1 (targeting B2)"
+      business_or_higher: [verhandlungssicher, "deutsch verhandlungssicher",
+                           "fließend deutsch", "fliessend deutsch", "deutsch fließend",
+                           "deutsch fliessend", "sehr gute deutschkenntnisse",
+                           "sehr gute deutsch", "ausgezeichnete deutschkenntnisse",
+                           "perfekte deutschkenntnisse", "perfektes deutsch",
+                           "muttersprache deutsch", "deutsch auf muttersprachniveau",
+                           "muttersprachliche deutschkenntnisse", "c1 deutsch", "deutsch c1",
+                           "c2 deutsch", "deutsch c2", "fluent german", "native german",
+                           "excellent german"]
+      preferred_or_conversational: ["deutschkenntnisse", "gute deutsch", "deutsch b1",
+                                    "b1 deutsch", "deutsch b2", "b2 deutsch",
+                                    "grundkenntnisse deutsch", "deutsch erforderlich",
+                                    "deutsch in wort und schrift", "deutsch von vorteil",
+                                    "deutsch erwünscht", "german required",
+                                    "conversational german", "german is a plus"]
+      english_friendly: ["englisch als arbeitssprache", "english is the working language",
+                         "kein deutsch erforderlich", "no german required",
+                         "german not required", "english-speaking team",
+                         "no german skills required"]
 
 # Any country not listed in `markets` falls back to this.
 default_market:

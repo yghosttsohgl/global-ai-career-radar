@@ -161,8 +161,10 @@ Sets `visa_status` and `language_requirement` per the job's market (`markets:` i
 - **Local language** — a market's cue lists are scanned and one of
   `BUSINESS_OR_HIGHER` / `PREFERRED_OR_CONVERSATIONAL` / `ENGLISH_FRIENDLY` /
   `UNKNOWN` is returned. A `BUSINESS_OR_HIGHER` hit (e.g. "fließend Deutsch",
-  "C1 Deutsch", "business Japanese", "JLPT N1") adds a gap. Markets with no
-  `language:` block → `NOT_A_BARRIER_FOR_USER`.
+  "sehr gute Deutschkenntnisse", "C1 Deutsch", "business Japanese", "JLPT N1")
+  adds a gap. Japan, Austria **and Vienna** have a `language:` block (Vienna
+  tolerates B1/B2, only near-native asks are a gap); only markets without one
+  (Remote) → `NOT_A_BARRIER_FOR_USER`.
 
 **c. Overreach penalty — `_overreach_penalty()`**
 Subtracts from the score (floored at 0) and adds a matching gap note, for roles
