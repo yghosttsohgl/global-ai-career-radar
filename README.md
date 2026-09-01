@@ -87,10 +87,17 @@ values are unchanged. Filters:
 - **Hide senior / lead titles** (default on).
 - **Hide native-language roles** (default on) — roles needing business/native
   German or Japanese.
+- **Application status** — show only jobs at a chosen pipeline stage (or `Unset`).
 
 Each card shows the score, verdict badge, `🤖 AI-scored` / `📏 Rule-scored`, the
 authorization + local-language read, strengths/gaps, the LLM's reasoning, and
 (for AI-scored jobs) suggested CV bullets. Results are paged 10 at a time.
+
+Each card also has an **application-status** dropdown — `Interested`, `Applied`,
+`Interviewing`, `Offer`, `Rejected`, `Not considered` — written straight to the
+`application_status` column in `data/jobs.sqlite3` (a scan or the scheduled DB
+commit never touches it). It shows as a badge on the card and drives the status
+filter and Datasette's `pipeline` query.
 
 ### Datasette (ad-hoc exploration)
 
@@ -102,7 +109,7 @@ python -m radar.cli view
 Opens at `localhost:8001`, read-only. Click any column to sort; use the facet
 chips (`country`, `source`, `llm_verdict`, …) to filter; type SQL in the box.
 Canned queries in [`datasette.json`](datasette.json): `ranked`, `to_score`,
-`by_source`, `verdicts_by_country`, `search_description`.
+`by_source`, `verdicts_by_country`, `pipeline`, `search_description`.
 
 ---
 

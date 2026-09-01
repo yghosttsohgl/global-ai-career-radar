@@ -6,7 +6,7 @@
       "tables": {
         "jobs": {
           "sort_desc": "rule_score",
-          "facets": ["country", "source", "llm_verdict", "recommendation", "visa_status", "language_requirement", "recommended_cv"],
+          "facets": ["country", "application_status", "source", "llm_verdict", "recommendation", "visa_status", "language_requirement", "recommended_cv"],
           "label_column": "title"
         }
       },
@@ -26,6 +26,10 @@
         "verdicts_by_country": {
           "title": "Verdict breakdown by country",
           "sql": "SELECT country, coalesce(llm_verdict, recommendation, 'UNSCORED') AS verdict, count(*) AS n FROM jobs GROUP BY country, verdict ORDER BY country, n DESC"
+        },
+        "pipeline": {
+          "title": "Jobs with a hand-set application status",
+          "sql": "SELECT application_status AS status, round(coalesce(llm_score, rule_score)) AS score, country, title, company, url FROM jobs WHERE application_status IS NOT NULL AND application_status != '' ORDER BY CASE application_status WHEN 'Offer' THEN 0 WHEN 'Interviewing' THEN 1 WHEN 'Applied' THEN 2 WHEN 'Interested' THEN 3 WHEN 'Rejected' THEN 4 ELSE 5 END, score DESC"
         },
         "search_description": {
           "title": "Full-text-ish search of the job description",

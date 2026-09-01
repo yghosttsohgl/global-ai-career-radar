@@ -7,11 +7,31 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import streamlit as st
 
 from radar.config import scoring as scoring_config
-from radar.db import init, jobs
+from radar.db import init, jobs, set_application_status
 from radar.scoring import is_senior_title, required_years, requires_native_language
 
 PER_PAGE = 10
 VERDICT_COLOR = {"APPLY": "green", "CONSIDER": "orange", "SKIP": "red", "UNSCORED": "gray"}
+
+# Hand-tracked application status. "" = untouched; kept short and ordered roughly
+# by pipeline stage. STATUS_COLOR feeds the on-card badge.
+STATUS_OPTIONS = ["", "Interested", "Applied", "Interviewing", "Offer", "Rejected", "Not considered"]
+STATUS_COLOR = {
+    "Interested": "blue",
+    "Applied": "green",
+    "Interviewing": "violet",
+    "Offer": "green",
+    "Rejected": "red",
+    "Not considered": "gray",
+}
+STATUS_ICON = {
+    "Interested": ":material/star:",
+    "Applied": ":material/send:",
+    "Interviewing": ":material/forum:",
+    "Offer": ":material/celebration:",
+    "Rejected": ":material/block:",
+    "Not considered": ":material/do_not_disturb_on:",
+}
 
 _MARKETS = scoring_config()["markets"]
 MARKET_NAMES = list(_MARKETS)
@@ -51,7 +71,8 @@ MARKET_RGB = {
 DEFAULT_RGB = "100,116,139"   # slate
 MARKET_BADGE = {"Japan": "violet", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
 
-FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True}
+FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True, "status": "All"}
+STATUS_FILTER_OPTIONS = ["All", "Unset"] + STATUS_OPTIONS[1:]
 
 init()
 st.set_page_config(page_title="Career Radar", page_icon=":material/radar:", layout="wide")
@@ -102,10 +123,22 @@ def filter_values(country):
         st.session_state.get(f"yrs_{country}", FILTER_DEFAULTS["yrs"]),
         st.session_state.get(f"snr_{country}", FILTER_DEFAULTS["snr"]),
         st.session_state.get(f"nat_{country}", FILTER_DEFAULTS["nat"]),
+        st.session_state.get(f"status_filter_{country}", FILTER_DEFAULTS["status"]),
     )
 
 
-def passes(j, minimum, max_years, hide_senior, hide_native):
+def status_ok(j, status_filter):
+    s = j["application_status"] or ""
+    if status_filter == "All":
+        return True
+    if status_filter == "Unset":
+        return s == ""
+    return s == status_filter
+
+
+def passes(j, minimum, max_years, hide_senior, hide_native, status_filter):
+    if not status_ok(j, status_filter):
+        return None
     if combined_score(j) < minimum:
         return None  # below score cutoff - not counted as "hidden by filters"
     text = job_text(j)
@@ -127,6 +160,11 @@ def filtered_count(country):
     return sum(1 for j in market_jobs(country) if passes(j, *vals) is True)
 
 
+def _set_status(fingerprint):
+    set_application_status(fingerprint, st.session_state.get(f"status_{fingerprint}", ""))
+    all_jobs.clear()
+
+
 def render_card(j):
     score = combined_score(j)
     verdict = combined_verdict(j)
@@ -134,6 +172,7 @@ def render_card(j):
     years = required_years(job_text(j))
     senior = is_senior_title(j["title"])
     native = requires_native_language(j["country"], j["language_requirement"], job_text(j))
+    status = j["application_status"] or ""
 
     score_color = VERDICT_COLOR.get(verdict, "gray")
 
@@ -147,6 +186,8 @@ def render_card(j):
         else:
             badges.badge("Rule-scored", icon=":material/rule:", color="gray")
         badges.markdown(f":{score_color}[**{round(score)}%**]")
+        if status:
+            badges.badge(status, icon=STATUS_ICON.get(status), color=STATUS_COLOR.get(status, "gray"))
         if senior:
             badges.badge("Senior title", icon=":material/trending_up:", color="gray")
         if years:
@@ -179,8 +220,18 @@ def render_card(j):
                 for bullet in j["llm_tailored_bullets"].split("|"):
                     st.markdown(f"- {bullet}")
 
+        foot = st.container(horizontal=True, vertical_alignment="center")
+        skey = f"status_{j['fingerprint']}"
+        if skey not in st.session_state:
+            st.session_state[skey] = status
+        foot.selectbox(
+            "Application status", STATUS_OPTIONS, key=skey,
+            on_change=_set_status, args=(j["fingerprint"],),
+            format_func=lambda s: s or "Set status…",
+            label_visibility="collapsed", width=200,
+        )
         if j["url"]:
-            st.link_button("Open job posting", j["url"], icon=":material/open_in_new:")
+            foot.link_button("Open job posting", j["url"], icon=":material/open_in_new:")
 
 
 def nav_css(selected):
@@ -238,10 +289,14 @@ def render_filters(country):
         )
         hide_senior = st.toggle("Hide senior / lead titles", value=FILTER_DEFAULTS["snr"], key=f"snr_{country}")
         hide_native = st.toggle("Hide native-language roles", value=FILTER_DEFAULTS["nat"], key=f"nat_{country}")
-    return minimum, max_years, hide_senior, hide_native
+        status_filter = st.selectbox(
+            "Application status", STATUS_FILTER_OPTIONS,
+            format_func=lambda s: s or "Set status…", key=f"status_filter_{country}",
+        )
+    return minimum, max_years, hide_senior, hide_native, status_filter
 
 
-def render_listing(country, minimum, max_years, hide_senior, hide_native):
+def render_listing(country, minimum, max_years, hide_senior, hide_native, status_filter):
     st.badge(MARKET_LABELS[country], icon=MARKET_ICONS[country],
              color=MARKET_BADGE.get(country, "gray"))
     if country in MARKET_BLURB:
@@ -254,7 +309,7 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native):
 
     kept, dropped = [], 0
     for j in data:
-        verdict = passes(j, minimum, max_years, hide_senior, hide_native)
+        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter)
         if verdict is None:
             continue
         if verdict is False:
