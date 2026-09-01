@@ -11,6 +11,7 @@ Shared helpers (fetch, clean_text, make_job, _keeps) and the base-URL table
 import hashlib
 import importlib
 import pkgutil
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -63,12 +64,40 @@ def fetch(url, **kw):
     return r
 
 
+_BLOCK_TAGS = ["p", "div", "section", "article", "ul", "ol", "tr", "table",
+               "h1", "h2", "h3", "h4", "h5", "h6"]
+
+
 def clean_text(html, limit=6000):
-    """Strip nav/head/script noise and return the readable body text."""
-    soup = BeautifulSoup(html, "html.parser")
+    """Readable body text with list / paragraph structure kept as newlines.
+
+    `<li>` items become "- " bullet lines and block elements get line breaks,
+    so a posting stays skimmable instead of collapsing into one paragraph.
+    Plain-text input (some APIs) passes through with its own line breaks.
+    """
+    soup = BeautifulSoup(html or "", "html.parser")
     for tag in soup.find_all(["script", "style", "head", "nav", "header", "footer"]):
         tag.decompose()
-    return soup.get_text(" ", strip=True)[:limit]
+    for br in soup.find_all("br"):
+        br.replace_with("\n")
+    for li in soup.find_all("li"):
+        li.insert_before("\n- ")
+        li.insert_after("\n")
+    for block in soup.find_all(_BLOCK_TAGS):
+        block.insert_before("\n")
+        block.insert_after("\n")
+
+    text = soup.get_text(" ")
+    lines, blanks = [], 0
+    for raw in text.splitlines():
+        line = re.sub(r"[ \t ]+", " ", raw).strip()
+        if line:
+            lines.append(line)
+            blanks = 0
+        elif lines and blanks == 0:
+            lines.append("")
+            blanks = 1
+    return "\n".join(lines).strip()[:limit]
 
 
 def _keeps(text, needles):

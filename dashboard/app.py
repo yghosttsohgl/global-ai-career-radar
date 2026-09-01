@@ -146,22 +146,49 @@ _STOP_HEADINGS = [
 ]
 
 
-def requirements_snippet(desc, limit=1100):
-    """Best-effort slice of the requirements/profile section of a posting."""
+_BULLET_CHARS = " \t-–—·•●▪*›»◦"
+
+
+def desc_lines(desc):
+    """Posting text as a list of trimmed, de-bulleted, de-duplicated lines."""
+    out, seen = [], set()
+    for raw in (desc or "").splitlines():
+        line = raw.strip(_BULLET_CHARS).strip()
+        if len(line) < 2:
+            continue
+        key = line.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(line)
+    return out
+
+
+def requirements_lines(desc, max_items=16):
+    """Best-effort list of requirement bullet lines from a posting."""
     if not desc:
-        return ""
+        return []
     low = desc.lower()
     hits = [i for i in (low.find(h) for h in _REQ_STRONG) if i >= 0]
     if not hits:
         hits = [i for i in (low.find(h) for h in _REQ_WEAK) if i >= 0]
     if not hits:
-        return ""
+        return []
     start = min(hits)
     rest = low[start + 15:]
     stops = [i for i in (rest.find(h) for h in _STOP_HEADINGS) if i >= 0]
-    end = start + 15 + min(stops) if stops else start + limit
-    snippet = re.sub(r"\s+", " ", desc[start:end]).strip(" -–—·|•")
-    return snippet[:limit].rstrip() + ("…" if len(snippet) > limit else "")
+    end = start + 15 + min(stops) if stops else start + 2400
+    chunk = desc[start:end]
+
+    lines = desc_lines(chunk)
+    if lines and len(lines[0]) < 45:  # drop the heading itself
+        lines = lines[1:]
+    if len(lines) <= 1:  # flat blob (older data) - split on sentence / list punctuation
+        blob = re.sub(r"\s+", " ", chunk).strip(_BULLET_CHARS)
+        lines = [p.strip() for p in re.split(r"(?<=[.!?;:])\s+|\s[•·▪●]\s", blob) if len(p.strip()) > 3]
+        if lines and len(lines[0]) < 45:
+            lines = lines[1:]
+    return lines[:max_items]
 
 
 def filter_values(country):
@@ -301,13 +328,17 @@ def render_card(j, show_req=False):
             st.markdown(":orange-badge[Gaps] " + " · ".join(j["gaps"].split("|")))
 
         if show_req and j["description"]:
-            snip = requirements_snippet(j["description"])
+            req = requirements_lines(j["description"])
+            all_lines = desc_lines(j["description"])
             with st.container(border=True):
-                st.caption("Requirements / profile — extracted from the posting"
-                           if snip else "Posting text (no requirements section detected)")
-                st.markdown(snip or re.sub(r"\s+", " ", j["description"])[:800].strip() + "…")
+                if req:
+                    st.caption("Requirements — extracted from the posting")
+                    st.markdown("\n".join(f"- {line}" for line in req))
+                else:
+                    st.caption("Posting text — no requirements section detected")
+                    st.markdown("\n".join(f"- {line}" for line in all_lines[:12]) or "_none saved_")
             with st.expander("Full posting text", icon=":material/article:"):
-                st.markdown(re.sub(r"\s+", " ", j["description"]))
+                st.markdown("\n\n".join(all_lines) or "_none saved_")
 
         if j["llm_tailored_bullets"]:
             with st.expander("Suggested CV bullets for this job", icon=":material/description:"):
