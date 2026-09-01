@@ -53,6 +53,22 @@ MARKET_BADGE = {"Japan": "violet", "Austria": "blue", "Remote": "green", "Vienna
 
 FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True}
 
+# Pins each card's score to the top-right corner of its bordered box.
+CARD_CSS = """
+<style>
+[class*="st-key-jobcard_"] { position: relative; }
+[class*="st-key-jobcard_"] h3 { padding-right: 3.5rem; }
+[class*="st-key-jobscore_"] {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.85rem;
+    z-index: 2;
+    width: auto;
+}
+[class*="st-key-jobscore_"] p { margin: 0; font-size: 1.05rem; font-weight: 700; }
+</style>
+"""
+
 init()
 st.set_page_config(page_title="Career Radar", page_icon=":material/radar:", layout="wide")
 
@@ -137,7 +153,10 @@ def render_card(j):
 
     score_color = VERDICT_COLOR.get(verdict, "gray")
 
-    with st.container(border=True):
+    with st.container(border=True, key=f"jobcard_{j['fingerprint']}"):
+        st.container(key=f"jobscore_{j['fingerprint']}").markdown(
+            f":{score_color}[**{round(score)}%**]"
+        )
         st.markdown(f"### {j['title']}")
 
         badges = st.container(horizontal=True)
@@ -146,7 +165,6 @@ def render_card(j):
             badges.badge("AI-scored", icon=":material/smart_toy:", color="violet")
         else:
             badges.badge("Rule-scored", icon=":material/rule:", color="gray")
-        badges.badge(f"{round(score)}%", icon=":material/speed:", color=score_color)
         if senior:
             badges.badge("Senior title", icon=":material/trending_up:", color="gray")
         if years:
@@ -298,6 +316,7 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native):
 
 
 st.title(":material/radar: Career Radar")
+st.markdown(CARD_CSS, unsafe_allow_html=True)
 
 main_col, aside_col = st.columns([3, 1], gap="large")
 
