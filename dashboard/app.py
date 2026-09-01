@@ -1,4 +1,5 @@
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -117,6 +118,52 @@ def lang_display(country, requirement):
     }.get(requirement, (str(requirement).replace("_", " ").capitalize(), "gray"))
 
 
+# Section headings that usually start / end the "what we want from you" block.
+# Matched as lowercase substrings of the (space-joined) posting text. Strong
+# headings are tried first; the vaguer weak ones only if nothing strong hits.
+_REQ_STRONG = [
+    "ihr profil", "dein profil", "ihr anforderungsprofil", "dein anforderungsprofil",
+    "anforderungsprofil", "unsere anforderungen", "was sie mitbringen", "was du mitbringst",
+    "das bringen sie mit", "das bringst du mit", "das solltest du mitbringen",
+    "womit du uns überzeugst", "das zeichnet dich aus", "ihre qualifikation",
+    "deine qualifikation", "ihre fähigkeiten", "wen wir suchen", "das erwarten wir",
+    "fachliche qualifikation", "damit begeisterst du uns", "das erwarten wir uns",
+    "your profile", "who you are", "what you'll need", "what you will need",
+    "what you bring", "what you will bring", "minimum qualifications", "basic qualifications",
+    "required experience", "what we're looking for", "what we are looking for",
+    "you may be a good fit if", "about you", "skills and experience",
+    "skills and experiences", "experience and qualifications",
+    "応募資格", "応募必要条件", "必須スキル", "必須条件", "求める経験", "求めるスキル", "求める人物像",
+]
+_REQ_WEAK = ["requirements", "qualifications", "voraussetzungen", "anforderungen"]
+_STOP_HEADINGS = [
+    "benefits", "we offer", "what we offer", "was wir bieten", "wir bieten",
+    "unser angebot", "deine benefits", "das bieten wir", "your benefits",
+    "about us", "über uns", "about the company", "how to apply", "das erwartet dich",
+    "unsere brüller", "perks", "compensation", "salary", "gehalt", "wir freuen uns",
+    "über das unternehmen", "das spricht dich an", "detaillierte angaben zur stelle",
+    "待遇", "福利厚生", "選考", "勤務地", "給与", "歓迎スキル",
+]
+
+
+def requirements_snippet(desc, limit=1100):
+    """Best-effort slice of the requirements/profile section of a posting."""
+    if not desc:
+        return ""
+    low = desc.lower()
+    hits = [i for i in (low.find(h) for h in _REQ_STRONG) if i >= 0]
+    if not hits:
+        hits = [i for i in (low.find(h) for h in _REQ_WEAK) if i >= 0]
+    if not hits:
+        return ""
+    start = min(hits)
+    rest = low[start + 15:]
+    stops = [i for i in (rest.find(h) for h in _STOP_HEADINGS) if i >= 0]
+    end = start + 15 + min(stops) if stops else start + limit
+    snippet = re.sub(r"\s+", " ", desc[start:end]).strip(" -–—·|•")
+    return snippet[:limit].rstrip() + ("…" if len(snippet) > limit else "")
+
+
 def filter_values(country):
     """The market's current filter settings (its widget state, or the defaults)."""
     return (
@@ -188,7 +235,7 @@ def _card_style(fingerprint, status):
     return ""
 
 
-def render_card(j):
+def render_card(j, show_req=False):
     fp = j["fingerprint"]
     score = combined_score(j)
     verdict = combined_verdict(j)
@@ -252,6 +299,15 @@ def render_card(j):
             st.markdown(":green-badge[Strengths] " + " · ".join(j["strengths"].split("|")))
         if j["gaps"]:
             st.markdown(":orange-badge[Gaps] " + " · ".join(j["gaps"].split("|")))
+
+        if show_req and j["description"]:
+            snip = requirements_snippet(j["description"])
+            with st.container(border=True):
+                st.caption("Requirements / profile — extracted from the posting"
+                           if snip else "Posting text (no requirements section detected)")
+                st.markdown(snip or re.sub(r"\s+", " ", j["description"])[:800].strip() + "…")
+            with st.expander("Full posting text", icon=":material/article:"):
+                st.markdown(re.sub(r"\s+", " ", j["description"]))
 
         if j["llm_tailored_bullets"]:
             with st.expander("Suggested CV bullets for this job", icon=":material/description:"):
@@ -322,10 +378,15 @@ def render_filters(country):
             "Application status", STATUS_FILTER_OPTIONS,
             format_func=lambda s: s or "Set status…", key=f"status_filter_{country}",
         )
-    return minimum, max_years, hide_senior, hide_native, status_filter, hide_nc
+        show_req = st.toggle(
+            "Show requirements", value=False, key=f"req_{country}",
+            help="Show each posting's requirements section (and full text) on the card.",
+        )
+    return minimum, max_years, hide_senior, hide_native, status_filter, hide_nc, show_req
 
 
-def render_listing(country, minimum, max_years, hide_senior, hide_native, status_filter, hide_nc):
+def render_listing(country, minimum, max_years, hide_senior, hide_native,
+                   status_filter, hide_nc, show_req):
     st.badge(MARKET_LABELS[country], icon=MARKET_ICONS[country],
              color=MARKET_BADGE.get(country, "gray"))
     if country in MARKET_BLURB:
@@ -374,7 +435,7 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native, status
     st.caption(f"Showing {start + 1}–{start + len(page_jobs)} of {len(data)} jobs")
 
     for j in page_jobs:
-        render_card(j)
+        render_card(j, show_req)
 
     if n_pages > 1:
         with st.container(horizontal=True, horizontal_alignment="center"):
