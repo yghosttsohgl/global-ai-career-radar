@@ -132,8 +132,10 @@ _REQ_STRONG = [
     "what you bring", "what you will bring", "minimum qualifications", "basic qualifications",
     "required experience", "what we're looking for", "what we are looking for",
     "you may be a good fit if", "about you", "skills and experience",
-    "skills and experiences", "experience and qualifications",
-    "応募資格", "応募必要条件", "必須スキル", "必須条件", "求める経験", "求めるスキル", "求める人物像",
+    "skills and experiences", "experience and qualifications", "you should have",
+    "you'll bring", "must-have", "must haves", "we're looking for", "we are looking for",
+    "応募資格", "応募必要条件", "必須スキル", "必須条件", "必須要件", "必要な経験",
+    "求める経験", "求めるスキル", "求める人物像", "スキル・経験",
 ]
 _REQ_WEAK = ["requirements", "qualifications", "voraussetzungen", "anforderungen"]
 _STOP_HEADINGS = [
