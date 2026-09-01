@@ -16,11 +16,15 @@ thresholds:
   llm_floor: 40   # minimum rule_score for a job to reach the LLM scoring pass
   apply: 75       # rule_score >= this -> recommendation APPLY
   consider: 50    # rule_score >= this -> CONSIDER (else SKIP)
+  # A market may override `apply` / `consider` under markets.<name>.thresholds.
 
 # --- Keyword groups -----------------------------------------------------------
-# Each group whose keywords appear (case-insensitive) in "title company
-# description" adds its points ONCE. Points stack, final score is capped at 100.
-# `label` is stored in the job's strengths list when the group matches.
+# Each group whose keywords appear (case-insensitive) adds its points ONCE.
+# Points stack, final score is capped at 100. `label` is stored in the job's
+# strengths list when the group matches.
+# match: "full" (default) searches "title company description"; "title" searches
+#   only the title - use it for role words that appear in unrelated ads as a
+#   sector reference (e.g. "Gastronomie", "Einzelhandel").
 keyword_groups:
   - label: "AI / GenAI / NLP / ML"
     points: 22
@@ -88,6 +92,38 @@ keyword_groups:
     keywords: [bilingual, trilingual, mandarin, "chinese language", "japanese language",
                "german language", 日本語, 中文, deutsch]
 
+  # Local part-time / stopgap work (mainly for the Vienna market). Kept low so
+  # they don't outweigh a real career-track match, but enough to clear the LLM
+  # floor when a hospitality/retail keyword also hits. Keywords are deliberately
+  # specific (not bare "store"/"host"/"promotion") to avoid firing on tech ads.
+  - label: "Hospitality / food service"
+    points: 25
+    match: title
+    keywords: [kellner, kellnerin, "kellner/in", barista, barkeeper, barkeeperin,
+               gastronomie, servicekraft, "service mitarbeiter", "service-mitarbeiter",
+               "servicemitarbeiter", hotellerie, "hotel mitarbeiter", rezeptionist,
+               rezeptionistin, "front office agent", "front desk agent",
+               waiter, waitress, bartender, hostess, "food service", küchenhilfe,
+               "chef de rang", "commis de rang", restaurantfachmann, restaurantfachfrau,
+               catering, "night audit", zimmermädchen, housekeeping, "room attendant"]
+  - label: "Retail / shop / warehouse"
+    points: 25
+    match: title
+    keywords: ["verkäufer", "verkäuferin", "verkäufer/in", einzelhandel,
+               einzelhandelskaufmann, einzelhandelskauffrau, "sales assistant",
+               "shop assistant", "retail assistant", "kassier", "kassierer",
+               "kassiererin", kassakraft, filialmitarbeiter, filialmitarbeiterin,
+               lagermitarbeiter, lagerist, "warehouse associate", "warehouse worker",
+               "stock associate", regalbetreuer, "warenverräumung", trafikant]
+  - label: "Part-time / flexible / entry-level"
+    points: 12
+    keywords: [teilzeit, "part-time", "part time", geringfügig, "geringfügige beschäftigung",
+               aushilfe, "minijob", werkstudent, "studentenjob", "student job",
+               ferialjob, ferialpraktikum, "no experience required", "keine erfahrung",
+               "keine vorkenntnisse", quereinsteiger, "quereinsteiger willkommen",
+               saisonarbeit, saisonkraft, "auf abruf", "promotion-job", promoter,
+               promotionkraft]
+
 # --- Markets -----------------------------------------------------------------
 # Keys must match the `country:` values used by sources in sources.yaml.
 # visa:
@@ -135,6 +171,19 @@ markets:
     visa: not_needed
     score_bonus: 0
     # no `language:` - Remote roles impose no local-language gate
+
+  # Local part-time / stopgap jobs in Vienna (hospitality, retail, service).
+  # Judged differently from career roles - see llm.hard_constraints. No visa
+  # barrier; B1 German is enough for most of these so no `language:` block, but
+  # the global native_language_cues still flag "Muttersprache Deutsch"-type asks.
+  Vienna:
+    visa: not_needed
+    score_bonus: 5
+    score_bonus_label: "Vienna: local, no visa"
+    # Lower cutoffs - a solid entry-level service job maxes out around 45-55.
+    thresholds:
+      apply: 45
+      consider: 30
 
 # Any country not listed in `markets` falls back to this.
 default_market:
@@ -197,5 +246,18 @@ llm:
     - Austria roles: no visa gap - the candidate already holds an unrestricted work permit.
       But flag any requirement for fluent/business-level German (C1+) as a real gap - the candidate
       is currently B1, working toward B2. German-friendly or English-working-language roles are fine.
+    - Vienna roles: these are LOCAL PART-TIME / STOPGAP jobs (hospitality, retail, shops, cleaning,
+      promotion) that the candidate wants for interim income and German practice while job-hunting -
+      NOT a career move. Judge them on: (a) is it genuinely low-requirement / entry-level and does
+      NOT demand years of sector experience or a trade qualification; (b) is it part-time, flexible,
+      geringfügig, or shift-based rather than full-time career track; (c) is B1 German or
+      English-friendly enough - only flag a language gap if it needs near-native German
+      ("Muttersprache", "verhandlungssicher") or a language the candidate doesn't have.
+      Do NOT penalise "this doesn't match the candidate's tech career". A low-requirement,
+      part-time, B1-German-OK role is APPLY; full-time or requiring real sector experience is
+      CONSIDER or SKIP. tailored_bullets: give 2-3 short, honest points a career-changer could put
+      on a one-page service-job CV (reliability, languages - English fluent / German B1 / Japanese /
+      Mandarin native, customer-facing / stakeholder communication, comfort with digital tools and
+      POS/booking systems), still only from the real profile.
     - Any other location: work authorization is unverified - list it as a gap unless the posting
       explicitly confirms it.

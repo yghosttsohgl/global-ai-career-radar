@@ -6,15 +6,14 @@ the region-eligible tech/ops roles.
 import time
 from datetime import datetime, timezone
 
-from . import DETAIL_FETCH_DELAY, _keeps, clean_text, endpoint, fetch, make_job, register
+from . import (DETAIL_FETCH_DELAY, REMOTE_LOCATIONS, _keeps, clean_text, endpoint,
+               fetch, make_job, register)
 from ..db import save
-
-_DEFAULT_LOCATIONS = ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"]
 
 
 @register("himalayas")
 def scan(s):
-    location_filter = [x.lower() for x in s.get("location_filter", _DEFAULT_LOCATIONS)]
+    location_filter = [x.lower() for x in s.get("location_filter", REMOTE_LOCATIONS)]
     title_filter = [x.lower() for x in s.get("title_filter", [])]
     now = datetime.now(timezone.utc).timestamp()
     seen, saved = set(), 0

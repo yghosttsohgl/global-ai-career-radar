@@ -47,6 +47,47 @@ TECH_OPS_TITLES: &tech_ops_titles
   - "localization"
   - "localisation"
 
+# Vienna local part-time / service jobs - keeps karriere.at keyword pages to
+# actual hospitality/retail/service roles (their search matches loosely).
+SERVICE_TITLES: &service_titles
+  - "kellner"
+  - "verkäuf"       # Verkäufer/in
+  - "verkauf"
+  - "einzelhandel"
+  - "kassa"
+  - "kassier"
+  - "lagermitarbeiter"
+  - "lagerist"
+  - "lager "
+  - "rezeption"
+  - "barista"
+  - "barkeep"
+  - "servicekraft"
+  - "servicemitarbeiter"
+  - "service-mitarbeiter"
+  - "mitarbeiter service"
+  - "gastronom"
+  - "hotel"
+  - "reinigung"
+  - "reinigungskraft"
+  - "küchenhilfe"
+  - "küchenmitarbeiter"
+  - "koch"
+  - "köch"
+  - "hostess"
+  - "aushilfe"
+  - "filialmitarbeiter"
+  - "shop assistant"
+  - "night audit"
+  - "housekeeping"
+  - "zimmermädchen"
+  - "commis"
+  - "chef de rang"
+  - "crew"
+  - "barkeeper"
+  - "promotion"
+  - "promoter"
+
 sources:
   # ---------------- Japan ----------------
   - name: Anthropic Careers
@@ -233,4 +274,59 @@ sources:
     max_pages: 25
     location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"]
     title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: RemoteOK
+    type: remoteok
+    country: Remote
+    # Keyless JSON. `location` is unreliable (often the company HQ), so only
+    # title_filter is applied - every listing here is remote.
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Jobicy
+    type: jobicy
+    country: Remote
+    # Keyless JSON. jobGeo gives real region eligibility, so location_filter works.
+    count: 100
+    location_filter: ["anywhere", "worldwide", "europe", "emea", "global", "germany", "austria", "apac"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: We Work Remotely
+    type: weworkremotely
+    country: Remote
+    # Category RSS feeds; <region> gives eligibility ("Anywhere in the World",
+    # "Europe Only", ...). Keyless.
+    categories: ["remote-programming-jobs", "remote-devops-sysadmin-jobs",
+                 "remote-product-jobs", "remote-customer-support-jobs",
+                 "remote-quality-assurance-jobs"]
+    location_filter: ["anywhere", "worldwide", "europe", "emea", "global", "germany", "austria"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  # ---------------- Vienna (local part-time / stopgap: hospitality, retail, service) ----------------
+  # Interim income + German practice while job-hunting. Scored by the Vienna
+  # market + the hospitality/retail/part-time keyword groups in
+  # profile/scoring.yaml, and judged as stopgap work (not career) by the LLM.
+  - name: karriere.at Vienna part-time
+    type: karriere_at
+    country: Vienna
+    # Many keyword categories; title_filter trims karriere.at's loose matches
+    # down to actual service/retail roles. De-duped by job URL within the run.
+    title_filter: *service_titles
+    urls:
+      - https://www.karriere.at/jobs/gastronomie/wien
+      - https://www.karriere.at/jobs/hotellerie/wien
+      - https://www.karriere.at/jobs/tourismus/wien
+      - https://www.karriere.at/jobs/kellner/wien
+      - https://www.karriere.at/jobs/barista/wien
+      - https://www.karriere.at/jobs/rezeption/wien
+      - https://www.karriere.at/jobs/verkauf/wien
+      - https://www.karriere.at/jobs/einzelhandel/wien
+      - https://www.karriere.at/jobs/kassa/wien
+      - https://www.karriere.at/jobs/lager/wien
+      - https://www.karriere.at/jobs/reinigung/wien
+      - https://www.karriere.at/jobs/promotion/wien
+      - https://www.karriere.at/jobs/aushilfe/wien
     enabled: true

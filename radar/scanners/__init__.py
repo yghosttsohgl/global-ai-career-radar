@@ -36,7 +36,16 @@ ENDPOINTS = {
     "jsearch": "https://{host}/search-v2",
     "remotive": "https://remotive.com/api/remote-jobs",
     "himalayas": "https://himalayas.app/jobs/api?limit=20&offset={offset}",
+    "remoteok": "https://remoteok.com/api",
+    "jobicy": "https://jobicy.com/api/v2/remote-jobs?count={count}",
+    "weworkremotely": "https://weworkremotely.com/categories/{category}.rss",
 }
+
+# Default candidate_required_location / region values a remote source keeps -
+# roles open to the applicant's region, not "USA only". Override per source
+# with `location_filter:` in sources.yaml.
+REMOTE_LOCATIONS = ["worldwide", "anywhere", "europe", "emea", "global",
+                    "germany", "austria", "apac"]
 
 
 def endpoint(key, source=None, **fmt):

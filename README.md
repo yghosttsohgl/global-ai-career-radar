@@ -73,8 +73,9 @@ All are subcommands of `python -m radar.cli`:
 streamlit run dashboard/app.py
 ```
 
-Opens at `localhost:8501`. Three market tabs (**Japan / Austria / Remote**), each
-with a collapsible **Filters** panel:
+Opens at `localhost:8501`. One tab per market in `scoring.yaml`
+(**Japan / Austria / Remote / Vienna** — Vienna being local part-time / stopgap
+service jobs), each with a collapsible **Filters** panel:
 
 - **Minimum score** — hides jobs below this combined score.
 - **Max years of experience required** (default 3) — hides roles asking for more
@@ -163,6 +164,10 @@ rule_score >= 75  → APPLY
 rule_score >= 50  → CONSIDER
 else              → SKIP
 ```
+
+A market can override these — the **Vienna** market (local part-time service
+jobs) uses `apply: 45 / consider: 30`, since a solid entry-level service role
+tops out around 50 on the keyword engine.
 
 Jobs with `rule_score >= 40` (`RULE_SCORE_FLOOR` in
 [`radar/llm_scoring.py`](radar/llm_scoring.py)) advance to the LLM pass.
