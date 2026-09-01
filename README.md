@@ -73,11 +73,13 @@ All are subcommands of `python -m radar.cli`:
 streamlit run dashboard/app.py
 ```
 
-Opens at `localhost:8501`. A right-hand panel holds the **market navigation**
-(one button per market in `scoring.yaml`, with its job count) and a collapsible
-**Filters** panel; the selected market's jobs fill the main area. The `Vienna`
-market is shown as **Part-time (local)** and given a distinct accent — it is the
-local part-time / stopgap service bucket. Filters:
+Opens at `localhost:8501` (titled **Career Radar**). A right-hand panel holds the
+**market navigation** — one colour-coded button per market in `scoring.yaml`,
+each showing how many jobs match that market's current filters — plus a
+collapsible **Filters** panel; the selected market's jobs fill the main area.
+`Remote` is shown as **Remote (global)** and `Vienna` as **Part-time (local)**
+(the local part-time / stopgap service bucket); the `scoring.yaml` keys and DB
+values are unchanged. Filters:
 
 - **Minimum score** — hides jobs below this combined score.
 - **Max years of experience required** (default 3) — hides roles asking for more

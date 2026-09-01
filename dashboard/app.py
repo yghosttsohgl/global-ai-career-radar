@@ -23,12 +23,12 @@ LANG_LABEL = {
 
 # Display-only overrides for the market navigation. The internal name (also the
 # DB `country` value and the key in scoring.yaml) is unchanged - only the label,
-# icon and one-line blurb differ.
+# icon, colour and one-line blurb differ.
 MARKET_LABELS = {name: name for name in MARKET_NAMES}
 MARKET_ICONS = {name: ":material/work:" for name in MARKET_NAMES}
 MARKET_BLURB = {}
 
-MARKET_LABELS["Vienna"] = "Part-time (local)"
+MARKET_LABELS.update({"Remote": "Remote (global)", "Vienna": "Part-time (local)"})
 MARKET_ICONS.update({
     "Japan": ":material/travel_explore:",
     "Austria": ":material/apartment:",
@@ -40,24 +40,26 @@ MARKET_BLURB["Vienna"] = (
     "stopgap work for interim income and German practice while job-hunting."
 )
 
-# Market that gets a distinct, always-on accent in the navigation.
-SPECIAL_MARKET = "Vienna"
+# One accent colour per market. `rgb` drives the scoped button CSS; `badge` is the
+# nearest st.badge colour name for the heading. Unknown markets fall back to slate.
+MARKET_RGB = {
+    "Japan": "225,29,72",     # rose
+    "Austria": "37,99,235",   # blue
+    "Remote": "13,148,136",   # teal
+    "Vienna": "217,119,6",    # amber
+}
+DEFAULT_RGB = "100,116,139"   # slate
+MARKET_BADGE = {"Japan": "red", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
+
+FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True}
 
 init()
-st.set_page_config(page_title="Global AI Career Radar", page_icon=":material/radar:", layout="wide")
+st.set_page_config(page_title="Career Radar", page_icon=":material/radar:", layout="wide")
 
 
 @st.cache_data(ttl=300)
 def all_jobs():
     return jobs()
-
-
-@st.cache_data(ttl=300)
-def market_totals():
-    totals = {}
-    for j in all_jobs():
-        totals[j["country"]] = totals.get(j["country"], 0) + 1
-    return totals
 
 
 def combined_score(j):
@@ -70,6 +72,38 @@ def combined_verdict(j):
 
 def job_text(j):
     return f"{j['title']} {j['description'] or ''}"
+
+
+def filter_values(country):
+    """The market's current filter settings (its widget state, or the defaults)."""
+    return (
+        st.session_state.get(f"min_{country}", FILTER_DEFAULTS["min"]),
+        st.session_state.get(f"yrs_{country}", FILTER_DEFAULTS["yrs"]),
+        st.session_state.get(f"snr_{country}", FILTER_DEFAULTS["snr"]),
+        st.session_state.get(f"nat_{country}", FILTER_DEFAULTS["nat"]),
+    )
+
+
+def passes(j, minimum, max_years, hide_senior, hide_native):
+    if combined_score(j) < minimum:
+        return None  # below score cutoff - not counted as "hidden by filters"
+    text = job_text(j)
+    if max_years < 15 and required_years(text) > max_years:
+        return False
+    if hide_senior and is_senior_title(j["title"]):
+        return False
+    if hide_native and requires_native_language(j["country"], j["language_requirement"], text):
+        return False
+    return True
+
+
+def market_jobs(country):
+    return [j for j in all_jobs() if j["country"] == country]
+
+
+def filtered_count(country):
+    vals = filter_values(country)
+    return sum(1 for j in market_jobs(country) if passes(j, *vals) is True)
 
 
 def render_card(j):
@@ -126,91 +160,79 @@ def render_card(j):
 
 def nav_css(selected):
     """Scoped styling for the right-hand market navigation (user-requested)."""
-    return f"""
-<style>
-[class*="st-key-nav_"] button {{
+    rules = ["""
+[class*="st-key-nav_"] button {
     justify-content: flex-start;
     text-align: left;
-    padding: 0.7rem 0.9rem;
-    border-radius: 0.6rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+}
+[class*="st-key-nav_"] button p { font-size: 1.02rem; font-weight: 600; }
+"""]
+    for name in MARKET_NAMES:
+        rgb = MARKET_RGB.get(name, DEFAULT_RGB)
+        sel = name == selected
+        rules.append(f"""
+.st-key-nav_{name} button {{
+    background: rgba({rgb}, {0.24 if sel else 0.10});
+    border-left: 4px solid rgb({rgb});
+    {f'box-shadow: inset 0 0 0 2px rgb({rgb});' if sel else ''}
 }}
-[class*="st-key-nav_"] button p {{
-    font-size: 1.03rem;
-    font-weight: 600;
-}}
-/* currently selected market */
-.st-key-nav_{selected} button {{
-    box-shadow: inset 0 0 0 2px #3b82f6;
-}}
-.st-key-nav_{selected} button p {{
-    font-weight: 700;
-}}
-/* the stand-out "{MARKET_LABELS[SPECIAL_MARKET]}" entry, in every state */
-.st-key-nav_{SPECIAL_MARKET} button {{
-    border-left: 4px solid #e8871e;
-    background: rgba(232, 135, 30, 0.13);
-}}
-.st-key-nav_{SPECIAL_MARKET} button:hover {{
-    background: rgba(232, 135, 30, 0.22);
-}}
-</style>
-"""
+.st-key-nav_{name} button:hover {{ background: rgba({rgb}, {0.32 if sel else 0.18}); }}
+.st-key-nav_{name} button p {{ font-weight: {700 if sel else 600}; }}
+""")
+    return "<style>" + "\n".join(rules) + "</style>"
 
 
 def render_nav():
     if st.session_state.get("market") not in MARKET_NAMES:
         st.session_state["market"] = MARKET_NAMES[0]
 
-    totals = market_totals()
     st.markdown("#### Markets")
     for name in MARKET_NAMES:
         if st.button(
-            f"{MARKET_LABELS[name]}  ·  {totals.get(name, 0)}",
+            f"{MARKET_LABELS[name]}  ·  {filtered_count(name)}",
             key=f"nav_{name}",
             icon=MARKET_ICONS[name],
             width="stretch",
         ):
             st.session_state["market"] = name
 
-    # Emitted after the loop so the selected-state ring reflects a just-made click.
+    # Emitted after the loop so the selected-state styling reflects a just-made click.
     st.markdown(nav_css(st.session_state["market"]), unsafe_allow_html=True)
     return st.session_state["market"]
 
 
 def render_filters(country):
     with st.expander("Filters", icon=":material/tune:", expanded=True):
-        minimum = st.slider("Minimum score", 0, 100, 40, key=f"min_{country}")
+        minimum = st.slider("Minimum score", 0, 100, FILTER_DEFAULTS["min"], key=f"min_{country}")
         max_years = st.slider(
-            "Max years of experience required", 0, 15, CANDIDATE_YEARS, key=f"yrs_{country}",
+            "Max years of experience required", 0, 15, FILTER_DEFAULTS["yrs"], key=f"yrs_{country}",
             help="Hide roles that ask for more than this many years. 15 = no limit.",
         )
-        hide_senior = st.toggle("Hide senior / lead titles", value=True, key=f"snr_{country}")
-        hide_native = st.toggle("Hide native-language roles", value=True, key=f"nat_{country}")
+        hide_senior = st.toggle("Hide senior / lead titles", value=FILTER_DEFAULTS["snr"], key=f"snr_{country}")
+        hide_native = st.toggle("Hide native-language roles", value=FILTER_DEFAULTS["nat"], key=f"nat_{country}")
     return minimum, max_years, hide_senior, hide_native
 
 
 def render_listing(country, minimum, max_years, hide_senior, hide_native):
-    st.header(MARKET_LABELS[country], anchor=False)
+    st.badge(MARKET_LABELS[country], icon=MARKET_ICONS[country],
+             color=MARKET_BADGE.get(country, "gray"))
     if country in MARKET_BLURB:
         st.caption(MARKET_BLURB[country])
 
-    data = [j for j in all_jobs() if j["country"] == country]
+    data = market_jobs(country)
     if not data:
         st.info(f"No {MARKET_LABELS[country]} jobs tracked yet.", icon=":material/inbox:")
         return
 
     kept, dropped = [], 0
     for j in data:
-        if combined_score(j) < minimum:
+        verdict = passes(j, minimum, max_years, hide_senior, hide_native)
+        if verdict is None:
             continue
-        text = job_text(j)
-        if max_years < 15 and required_years(text) > max_years:
-            dropped += 1
-            continue
-        if hide_senior and is_senior_title(j["title"]):
-            dropped += 1
-            continue
-        if hide_native and requires_native_language(j["country"], j["language_requirement"], text):
+        if verdict is False:
             dropped += 1
             continue
         kept.append(j)
@@ -250,7 +272,7 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native):
             st.pagination(n_pages, key=page_key)
 
 
-st.title(":material/radar: Global AI Career Radar")
+st.title(":material/radar: Career Radar")
 
 main_col, aside_col = st.columns([3, 1], gap="large")
 
