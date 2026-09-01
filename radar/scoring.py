@@ -12,10 +12,15 @@ _CFG = scoring()
 
 CANDIDATE_YEARS = _CFG["candidate_years"]
 LLM_FLOOR = _CFG["thresholds"]["llm_floor"]
-_APPLY = _CFG["thresholds"]["apply"]
-_CONSIDER = _CFG["thresholds"]["consider"]
 
-_KEYWORD_GROUPS = [(g["label"], [k.lower() for k in g["keywords"]], g["points"])
+
+def _thresholds(country):
+    """(apply, consider) cutoffs - a market may override the global ones."""
+    g = _CFG["thresholds"]
+    m = market(country).get("thresholds") or {}
+    return m.get("apply", g["apply"]), m.get("consider", g["consider"])
+
+_KEYWORD_GROUPS = [(g["label"], [k.lower() for k in g["keywords"]], g["points"], g.get("match", "full"))
                    for g in _CFG["keyword_groups"]]
 _VISA_CUES = [c.lower() for c in _CFG.get("visa_cues", [])]
 _PENALTY = _CFG["overreach_penalty"]
@@ -27,11 +32,13 @@ _DEFAULT_SPONSOR_GAP = "Visa sponsorship not mentioned - verify before applying"
 
 def score(j):
     """Keyword-rule score for a job. Returns (score, matched_strength_labels)."""
-    t = f"{j.title} {j.company} {j.description}".lower()
+    full = f"{j.title} {j.company} {j.description}".lower()
+    title = (j.title or "").lower()
     total = 0
     strengths = []
-    for label, keys, pts in _KEYWORD_GROUPS:
-        if any(k in t for k in keys):
+    for label, keys, pts, match in _KEYWORD_GROUPS:
+        haystack = title if match == "title" else full
+        if any(k in haystack for k in keys):
             total += pts
             strengths.append(label)
 
@@ -171,9 +178,10 @@ def evaluate(j):
         j.gaps = penalty_notes + j.gaps
     j.recommended_cv = cv(j)
     j.reason = "; ".join(j.strengths[:3] + j.gaps[:2]) or "No strong signals matched"
+    apply_cut, consider_cut = _thresholds(j.country)
     j.recommendation = (
-        "APPLY" if j.rule_score >= _APPLY
-        else "CONSIDER" if j.rule_score >= _CONSIDER
+        "APPLY" if j.rule_score >= apply_cut
+        else "CONSIDER" if j.rule_score >= consider_cut
         else "SKIP"
     )
     return j

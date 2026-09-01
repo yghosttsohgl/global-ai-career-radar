@@ -6,15 +6,14 @@ roles open to the applicant's region (Worldwide / Europe / EMEA / ...), not
 """
 import time
 
-from . import DETAIL_FETCH_DELAY, _keeps, clean_text, endpoint, fetch, make_job, register
+from . import (DETAIL_FETCH_DELAY, REMOTE_LOCATIONS, _keeps, clean_text, endpoint,
+               fetch, make_job, register)
 from ..db import save
-
-_DEFAULT_LOCATIONS = ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"]
 
 
 @register("remotive")
 def scan(s):
-    location_filter = [x.lower() for x in s.get("location_filter", _DEFAULT_LOCATIONS)]
+    location_filter = [x.lower() for x in s.get("location_filter", REMOTE_LOCATIONS)]
     title_filter = [x.lower() for x in s.get("title_filter", [])]
     base = endpoint("remotive", s)
     seen, saved = set(), 0

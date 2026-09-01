@@ -1,20 +1,23 @@
 """karriere.at - Austria's biggest board (server-rendered, stable CSS classes).
 
 Accepts a single `url:` or a list of `urls:` (one per keyword category, e.g.
-/jobs/software-entwicklung/wien). Results are de-duped by job URL within a run.
+/jobs/software-entwicklung/wien). karriere.at keyword pages match loosely, so
+an optional `title_filter:` keeps only postings whose title matches. Results
+are de-duped by job URL within a run.
 """
 import time
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from . import DETAIL_FETCH_DELAY, DETAIL_FETCH_LIMIT, clean_text, fetch, make_job, register
+from . import DETAIL_FETCH_DELAY, DETAIL_FETCH_LIMIT, _keeps, clean_text, fetch, make_job, register
 from ..db import save
 
 
 @register("karriere_at")
 def scan(s):
     urls = s.get("urls") or [s["url"]]
+    title_filter = [x.lower() for x in s.get("title_filter", [])]
     seen = set()
     saved = 0
     for listing_url in urls:
@@ -28,10 +31,10 @@ def scan(s):
             if not title_a:
                 continue
             url = urljoin(listing_url, title_a["href"])
-            if url in seen:
+            title = title_a.get_text(strip=True)
+            if url in seen or not _keeps(title, title_filter):
                 continue
             seen.add(url)
-            title = title_a.get_text(strip=True)
             company_el = item.select_one(".m-jobsListItem__company")
             company = company_el.get_text(" ", strip=True) if company_el else s["name"]
             location_el = item.select_one(".m-jobsListItem__location")
