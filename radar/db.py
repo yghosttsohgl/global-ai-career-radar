@@ -11,6 +11,9 @@ NEW_COLUMNS = [
     ("llm_reasoning", "TEXT"),
     ("llm_tailored_bullets", "TEXT"),
     ("notified_at", "TEXT"),
+    # Hand-set in the dashboard; never touched by scan/score, so a rescan or the
+    # scheduled DB commit leaves it alone.
+    ("application_status", "TEXT"),
 ]
 
 
@@ -126,6 +129,17 @@ def save(j):
         j.reason,
     ))
 
+    c.commit()
+    c.close()
+
+
+def set_application_status(fingerprint, status):
+    """Set (or clear, with a falsy status) a job's hand-tracked application status."""
+    c = con()
+    c.execute(
+        "UPDATE jobs SET application_status = ? WHERE fingerprint = ?",
+        (status or None, fingerprint),
+    )
     c.commit()
     c.close()
 
