@@ -138,9 +138,7 @@ def render_card(j):
     score_color = VERDICT_COLOR.get(verdict, "gray")
 
     with st.container(border=True):
-        head = st.container(horizontal=True, vertical_alignment="center")
-        head.header(f":{score_color}[{round(score)}%]", anchor=False)
-        head.markdown(f"#### {j['title']}")
+        st.markdown(f"### {j['title']}")
 
         badges = st.container(horizontal=True)
         badges.badge(verdict, color=score_color)
@@ -148,6 +146,7 @@ def render_card(j):
             badges.badge("AI-scored", icon=":material/smart_toy:", color="violet")
         else:
             badges.badge("Rule-scored", icon=":material/rule:", color="gray")
+        badges.badge(f"{round(score)}%", icon=":material/speed:", color=score_color)
         if senior:
             badges.badge("Senior title", icon=":material/trending_up:", color="gray")
         if years:
