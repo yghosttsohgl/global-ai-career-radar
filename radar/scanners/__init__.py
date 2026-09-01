@@ -9,6 +9,7 @@ Shared helpers (fetch, clean_text, make_job, _keeps) and the base-URL table
 (ENDPOINTS) live here so the per-platform modules stay tiny.
 """
 import hashlib
+import html as _html
 import importlib
 import pkgutil
 import re
@@ -68,14 +69,15 @@ _BLOCK_TAGS = ["p", "div", "section", "article", "ul", "ol", "tr", "table",
                "h1", "h2", "h3", "h4", "h5", "h6"]
 
 
-def clean_text(html, limit=6000):
+def clean_text(raw, limit=6000):
     """Readable body text with list / paragraph structure kept as newlines.
 
     `<li>` items become "- " bullet lines and block elements get line breaks,
     so a posting stays skimmable instead of collapsing into one paragraph.
-    Plain-text input (some APIs) passes through with its own line breaks.
+    HTML entities are unescaped first (Greenhouse serves escaped markup like
+    "&lt;p&gt;"); plain-text input (some APIs) passes through unchanged.
     """
-    soup = BeautifulSoup(html or "", "html.parser")
+    soup = BeautifulSoup(_html.unescape(raw or ""), "html.parser")
     for tag in soup.find_all(["script", "style", "head", "nav", "header", "footer"]):
         tag.decompose()
     for br in soup.find_all("br"):
