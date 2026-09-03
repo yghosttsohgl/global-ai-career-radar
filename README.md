@@ -1,5 +1,7 @@
 # Global AI Career Radar
 
+[![CI](https://github.com/yghosttsohgl/global-ai-career-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/yghosttsohgl/global-ai-career-radar/actions/workflows/ci.yml)
+
 A personal job radar for one candidate. It scans a fixed set of job boards for
 tech + operations roles in **Japan**, **Austria** (also the EU / work-permit
 bucket), and **Remote**, scores each posting against the candidate's profile —
