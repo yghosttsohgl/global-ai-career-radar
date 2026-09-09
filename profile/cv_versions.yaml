@@ -1,0 +1,40 @@
+cv_versions:
+  - id: ai_llm_product
+    name: "AI / LLM Product"
+    emphasize:
+      - AI-company Product Manager
+      - LLM evaluation
+      - AI data pipelines
+      - speech models
+      - NLP
+      - product management
+
+  - id: ai_nlp_evaluation
+    name: "AI / NLP / Evaluation"
+    emphasize:
+      - LLM evaluation
+      - speech model evaluation
+      - NLP
+      - machine translation
+      - M.Eng. (NLP / Machine Translation)
+      - Python
+      - SQL
+
+  - id: technical_software
+    name: "Technical / Software"
+    emphasize:
+      - Python
+      - SQL
+      - APIs
+      - testing
+      - consultancy Software Developer
+      - automation
+
+  - id: japan_focused
+    name: "Japan-focused"
+    emphasize:
+      - Japanese research university (M.Eng.)
+      - JLPT N1 (2018)
+      - AI / NLP
+      - AI-company experience
+      - Japanese reading/listening

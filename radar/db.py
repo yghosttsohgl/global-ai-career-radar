@@ -54,15 +54,6 @@ def init():
 
     existing_cols = {row["name"] for row in c.execute("PRAGMA table_info(jobs)")}
 
-    # Renamed columns: old -> new. The relevant language / work authorization
-    # depends on the job's market, so the market-specific names were generalised.
-    for old, new in (("japanese_requirement", "language_requirement"),
-                     ("china_work_authorization", "work_authorization")):
-        if old in existing_cols and new not in existing_cols:
-            c.execute(f"ALTER TABLE jobs RENAME COLUMN {old} TO {new}")
-            existing_cols.discard(old)
-            existing_cols.add(new)
-
     for name, coltype in NEW_COLUMNS:
         if name not in existing_cols:
             c.execute(f"ALTER TABLE jobs ADD COLUMN {name} {coltype}")

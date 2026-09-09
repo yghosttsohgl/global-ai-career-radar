@@ -1,0 +1,209 @@
+profile:
+  name: "Candidate (anonymized)"
+
+  target_markets:
+    - Japan
+    - Austria
+
+  work_authorization:
+    Austria: "Unrestricted work permit"
+    Japan: "Requires appropriate Japan work authorization; verify per job"
+
+  languages:
+    Japanese:
+      jlpt: "N1 (2018)"
+      cv_level: "B1"
+      current_reading: "Strong; can read most Japanese text without problems"
+      current_listening: "Good for daily conversations and some more difficult topics"
+      current_speaking: "Weak"
+      current_writing: "Weak"
+    English: "B2-C1"
+    German: "A2-B1; currently studying intensively, targeting B2"
+    Mandarin: "Native"
+
+  education:
+    - institution: "Leading Japanese research university"
+      degree: "M.Eng."
+      period: "09/2019 - 09/2021"
+      field: "Information, Production, and Systems"
+      focus:
+        - Natural Language Processing
+        - Machine Translation
+      course_language: "English"
+
+    - institution: "Public university of technology (China)"
+      degree: "B.Eng."
+      period: "09/2015 - 06/2019"
+      field: "Information Engineering"
+      focus:
+        - Embedded Systems
+        - Digital Signal Processing
+        - Computer Networking
+
+  experience:
+    - company: "Major Chinese AI & search technology company (engaged via an IT services firm)"
+      role: "Product Manager"
+      period: "09/2023 - 09/2025"
+      focus:
+        - LLM data pipeline
+        - Model evaluation
+        - Speech models
+      working_languages:
+        - English
+        - Japanese
+        - Mandarin
+      responsibilities:
+        - "Evaluated speech and LLM/AI companion model performance"
+        - "Delivered structured reports to guide model improvements"
+        - "Managed data backlogs and directed speech annotation work"
+        - "Researched and sourced data for projects"
+
+    - company: "Global software consultancy"
+      role: "Software Developer"
+      period: "09/2022 - 07/2023"
+      focus:
+        - Salesforce CRM
+        - Business Process Automation
+      working_language:
+        - English
+      responsibilities:
+        - "Developed and customized Salesforce platform solutions for clients"
+        - "Prepared and periodically presented technical training sessions"
+
+  projects:
+    - name: "GreenOps: AI-Driven Carbon-Aware Cloud Optimizer"
+      period: "07/2026 - present"
+      status: "Ongoing; estimated completion 12/2026"
+      description: "AI agent shifting Kubernetes workloads by carbon, cost, and SLA"
+      skills:
+        - AI agents
+        - Kubernetes
+        - Cloud
+        - Carbon-aware computing
+        - Cost optimization
+        - SLA optimization
+        - Data pipelines
+        - Cloud telemetry
+        - Dashboards
+      responsibilities:
+        - "Built data pipeline ingesting carbon-intensity and cloud telemetry"
+        - "Designed dashboards visualizing load, carbon intensity, and cost"
+
+    - name: "Zero-shot TTS: Expressive Emotion Controllable Text-to-Speech Model"
+      organization: "The AI company's international speech-AI R&D team"
+      period: "05/2024 - 09/2025"
+      focus:
+        - TTS
+        - ASR
+        - Speech AI
+        - Dataset sourcing
+        - Data quality
+        - Model evaluation
+      responsibilities:
+        - "Sourced external expressive, high-fidelity speech datasets"
+        - "Monitored data quality across ingestion, preparation, and output stages"
+        - "Evaluated model performance using WER, MOS, and other metrics"
+        - "Logged model drawbacks and failures into an improvement backlog"
+
+    - name: "Cross-Platform Migration for an Australian Lending Provider"
+      organization: "Australian fintech lending provider"
+      period: "12/2022 - 07/2023"
+      focus:
+        - Salesforce
+        - Core banking platform integration
+        - APIs
+        - Backend development
+        - UI development
+        - Testing
+      responsibilities:
+        - "Bridged CRM and core-banking-platform APIs"
+        - "Amended UI and backend logic"
+        - "Implemented unit and integration tests for new lending scenarios"
+
+  skills:
+    AI_and_Data:
+      - LLM Data Pipeline
+      - LLM Evaluation
+      - Speech Model Evaluation
+      - TTS
+      - ASR
+      - Dataset Sourcing
+      - Prompt Engineering
+      - Data Quality
+      - Model Evaluation
+      - NLP
+      - Machine Translation
+
+    Programming:
+      - Python
+      - JavaScript
+      - SQL
+      - HTML/CSS
+
+    Testing_and_QA:
+      - Speech Model Evaluation
+      - Unit Testing
+      - Integration Testing
+      - API Testing
+      - Postman
+
+    Software_and_Technical:
+      - Salesforce
+      - APIs
+      - Business Process Automation
+      - Kubernetes
+      - Cloud Telemetry
+      - Git
+      - Linux CLI
+
+    Tools_and_Process:
+      - Jira
+      - Confluence
+      - Agile Framework
+
+  certifications:
+    - "Salesforce Certified Platform Developer I"
+    - "Salesforce Certified Platform Administrator"
+    - "JLPT N1 (2018)"
+
+  publication:
+    year: 2021
+    role: "Co-author of a peer-reviewed paper at an international computational-linguistics conference"
+    topic:
+      - Information Retrieval
+      - Semantic Representation
+
+  current_learning:
+    - institution: "Intensive German-language program (Vienna language school)"
+      period: "12/2025 - present"
+      program: "Intensive German Language Program"
+      current_level: "B1"
+      target: "B2 by end of year"
+
+  preferences:
+    # Open to broad tech + operations roles, not only AI. In rough order of
+    # preference, but a good fit in any of these is worth surfacing.
+    role_families:
+      - AI / LLM / NLP / Speech (evaluation, data, product)
+      - Technical / AI Product Management
+      - Program / Project Management
+      - QA / Testing / Test Automation
+      - Salesforce / CRM / low-code development
+      - Software Engineering (backend, full-stack, API)
+      - Data (analysis, quality, annotation operations)
+      - Operations / Business Operations
+      - Localization / i18n / language quality
+
+    Japan:
+      english_friendly: true
+      visa_sponsorship_preferred: true
+
+    Austria:
+      english_friendly: true
+      german_level: "B1, improving to B2 - can take German-friendly roles, not yet German-only"
+      visa_sponsorship_required: false
+
+  profile_update_notes:
+    - "Add new projects here as they are completed."
+    - "Add new skills here when supported by actual project or work experience."
+    - "Master Profile is the source of truth for all CV versions."

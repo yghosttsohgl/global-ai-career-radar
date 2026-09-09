@@ -30,8 +30,8 @@ using the user's Claude Pro/Max session - no separate API spend.
    they may have been edited since.
 
 4. For each pending job, evaluate honestly against the profile following
-   that rubric. Weigh hard constraints as the rubric describes (Japan
-   business-Japanese gap, China work-authorization gap, Austria no visa gap).
+   that rubric. Weigh the hard constraints the rubric spells out (spoken-
+   language gaps, work authorization, seniority).
    `tailored_bullets` must be drawn only from real experience in the profile
    - never invent experience. Flag anything clearly wrong with a posting
    itself (e.g. explicitly closed/expired) as a SKIP with that as the reason,
