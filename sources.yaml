@@ -47,6 +47,50 @@ TECH_OPS_TITLES: &tech_ops_titles
   - "localization"
   - "localisation"
 
+# EU / EEA locations the candidate can take on an Austrian work permit. Used as
+# location_filter on company ATS boards that also list US-only roles. A posting
+# matches if any one needle is a substring of its location string, so a role
+# spanning several EU hubs still passes. Deliberately NO bare "remote" /
+# "anywhere" - company boards write "USA | Remote", which those would wrongly
+# admit; "europe" / "emea" / an EU country name is required instead.
+EU_LOCATIONS: &eu_locations
+  - "europe"
+  - "emea"
+  - "eea"
+  - "eu "
+  - "| eu"
+  - "austria"
+  - "vienna"
+  - "germany"
+  - "berlin"
+  - "munich"
+  - "cologne"
+  - "netherlands"
+  - "amsterdam"
+  - "ireland"
+  - "dublin"
+  - "poland"
+  - "warsaw"
+  - "portugal"
+  - "lisbon"
+  - "spain"
+  - "madrid"
+  - "barcelona"
+  - "sweden"
+  - "stockholm"
+  - "france"
+  - "paris"
+  - "italy"
+  - "bulgaria"
+  - "sofia"
+  - "romania"
+  - "latvia"
+  - "estonia"
+  - "czech"
+  - "belgium"
+  - "denmark"
+  - "finland"
+
 # Vienna local part-time / service jobs - keeps karriere.at keyword pages to
 # actual hospitality/retail/service roles (their search matches loosely).
 SERVICE_TITLES: &service_titles
@@ -205,6 +249,37 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  - name: DeepL
+    type: ashby
+    board: deepl
+    # Cologne-HQ machine-translation company - direct fit for the candidate's
+    # M.Eng in NLP / Machine Translation. EU offices (Cologne, Berlin, Munich)
+    # plus London and remote-EU; a fair number of roles are senior.
+    country: Austria
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: n8n
+    type: ashby
+    board: n8n
+    # Berlin workflow-automation platform, hires remote across the EU (Estonia,
+    # Latvia, Romania, Netherlands, Portugal, ...). Fits the automation /
+    # integration angle and lists product-manager roles too.
+    country: Austria
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Synthesia
+    type: ashby
+    board: synthesia
+    # London/Europe AI video + avatar company; many roles are "Europe" remote.
+    country: Austria
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
   - name: karriere.at Vienna
     type: karriere_at
     country: Austria
@@ -354,20 +429,52 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  # Company ATS boards (Ashby / Greenhouse) for speech-AI, machine-translation,
+  # localization and automation companies that hire remote across the EU -
+  # domain-adjacent to the candidate's TTS/ASR, NLP/MT and automation background.
+  # Each board also carries US-only roles, so EU_LOCATIONS trims them.
   - name: ElevenLabs
     type: ashby
     board: elevenlabs
     country: Remote
-    # Remote-first AI (voice / speech) company that hires across the EU - a strong
-    # domain match for the candidate's TTS/ASR background. Board is ~250 roles
-    # (mostly US-hub), so filter to EU-country / remote locations + tech titles.
-    # EU / EEA locations only (candidate has an Austrian permit, not a UK one) -
-    # a role listing London alongside EU hubs still matches on the EU needle.
-    location_filter: ["remote", "worldwide", "anywhere", "europe", "emea", "global",
-                      "germany", "berlin", "austria", "vienna", "amsterdam", "netherlands",
-                      "dublin", "ireland", "poland", "warsaw", "portugal", "lisbon",
-                      "spain", "madrid", "barcelona", "sweden", "stockholm", "france",
-                      "paris", "italy", "bulgaria", "sofia"]
+    # Remote-first voice/speech AI - strong match for the TTS/ASR background.
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Deepgram
+    type: ashby
+    board: deepgram
+    country: Remote
+    # Speech-to-text company; US-heavy board but runs EU-remote roles.
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: poolside
+    type: ashby
+    board: poolside
+    country: Remote
+    # Paris AI lab, hires "Remote (EMEA)" - includes evaluation-focused roles.
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Phrase
+    type: ashby
+    board: phrase
+    country: Remote
+    # EU localization platform (i18n / language quality is a target family).
+    location_filter: *eu_locations
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Lokalise
+    type: greenhouse
+    board: lokalise
+    country: Remote
+    # Latvia-based localization platform; small board, remote-EU roles.
+    location_filter: *eu_locations
     title_filter: *tech_ops_titles
     enabled: true
 
