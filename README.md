@@ -89,8 +89,10 @@ values are unchanged. Filters:
 - **Hide senior / lead titles** (default on).
 - **Hide native-language roles** (default on) — roles needing business/native
   German or Japanese.
-- **Hide 'Not considered' roles** (default off) — drop `Not considered` jobs
+- **Hide 'Not considered' roles** (default on) — drop `Not considered` jobs
   entirely instead of just greying them.
+- **Hide 'Applied' roles** (default on) — drop roles you've already applied to;
+  turn off to review them.
 - **Application status** — show only jobs at a chosen pipeline stage (or `Unset`).
 - **Show requirements** (default off) — expands each card with the posting's
   requirements/profile section (best-effort extraction) plus its full text, so
@@ -182,7 +184,9 @@ beyond a candidate with `CANDIDATE_YEARS = 3` years:
 | **Native / business local language** — `language_requirement == BUSINESS_OR_HIGHER`, or a "native / 母語 / Muttersprache" cue | **−20** |
 
 **d. Recommendation**
-`recommended_cv` is chosen from keywords by `cv()`. Then:
+`recommended_cv` is chosen from keywords by `cv()` (blank for markets with
+`match_cv: false`, e.g. **Vienna** stopgap jobs, which use a one-page service CV
+rather than a tech variant). Then:
 
 ```
 rule_score >= 75  → APPLY

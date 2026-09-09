@@ -101,6 +101,8 @@ _CV = _CFG["cv_selection"]
 
 
 def cv(j):
+    if market(j.country).get("match_cv") is False:
+        return ""  # e.g. Vienna stopgap jobs - a one-page service CV, not a tech variant
     t = f"{j.title} {j.description}".lower()
     for rule in _CV.get("rules", []):
         if any(k.lower() in t for k in rule["keywords"]):

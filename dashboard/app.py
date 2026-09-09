@@ -73,7 +73,7 @@ DEFAULT_RGB = "100,116,139"   # slate
 MARKET_BADGE = {"Japan": "violet", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
 
 FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True,
-                   "status": "All", "hnc": False}
+                   "status": "All", "hnc": True, "happ": True}
 STATUS_FILTER_OPTIONS = ["All", "Unset"] + STATUS_OPTIONS[1:]
 
 init()
@@ -202,6 +202,7 @@ def filter_values(country):
         st.session_state.get(f"nat_{country}", FILTER_DEFAULTS["nat"]),
         st.session_state.get(f"status_filter_{country}", FILTER_DEFAULTS["status"]),
         st.session_state.get(f"hnc_{country}", FILTER_DEFAULTS["hnc"]),
+        st.session_state.get(f"happ_{country}", FILTER_DEFAULTS["happ"]),
     )
 
 
@@ -214,12 +215,15 @@ def status_ok(j, status_filter):
     return s == status_filter
 
 
-def passes(j, minimum, max_years, hide_senior, hide_native, status_filter, hide_not_considered):
+def passes(j, minimum, max_years, hide_senior, hide_native, status_filter,
+           hide_not_considered, hide_applied):
     s = j["application_status"] or ""
     # Rejected jobs drop out of every view unless you explicitly filter to them.
     if s == "Rejected" and status_filter != "Rejected":
         return None
     if s == "Not considered" and hide_not_considered and status_filter != "Not considered":
+        return None
+    if s == "Applied" and hide_applied and status_filter != "Applied":
         return None
     if not status_ok(j, status_filter):
         return None
@@ -320,7 +324,8 @@ def render_card(j, show_req=False):
         meta.badge(auth_label, icon=":material/verified_user:", color=auth_color)
         lang_label, lang_color = lang_display(j["country"], j["language_requirement"])
         meta.badge(lang_label, icon=":material/translate:", color=lang_color)
-        meta.badge(f"CV: {j['recommended_cv']}", icon=":material/description:", color="gray")
+        if j["recommended_cv"]:  # blank for markets with match_cv: false (e.g. Vienna)
+            meta.badge(f"CV: {j['recommended_cv']}", icon=":material/description:", color="gray")
 
         if j["llm_reasoning"]:
             st.caption(f":material/smart_toy: {j['llm_reasoning']}")
@@ -406,7 +411,11 @@ def render_filters(country):
         )
         hide_senior = st.toggle("Hide senior / lead titles", value=FILTER_DEFAULTS["snr"], key=f"snr_{country}")
         hide_native = st.toggle("Hide native-language roles", value=FILTER_DEFAULTS["nat"], key=f"nat_{country}")
-        hide_nc = st.toggle("Hide 'Not considered' roles", value=FILTER_DEFAULTS["hnc"], key=f"hnc_{country}")
+        hide_nc = st.toggle("Hide 'Not considered' roles", value=FILTER_DEFAULTS["hnc"], key=f"hnc_{country}")  # hidden by default
+        hide_app = st.toggle(
+            "Hide 'Applied' roles", value=FILTER_DEFAULTS["happ"], key=f"happ_{country}",  # hidden by default
+            help="Drop roles you've already applied to. Turn off to review them.",
+        )
         status_filter = st.selectbox(
             "Application status", STATUS_FILTER_OPTIONS,
             format_func=lambda s: s or "Set status…", key=f"status_filter_{country}",
@@ -415,11 +424,11 @@ def render_filters(country):
             "Show requirements", value=False, key=f"req_{country}",
             help="Show each posting's requirements section (and full text) on the card.",
         )
-    return minimum, max_years, hide_senior, hide_native, status_filter, hide_nc, show_req
+    return minimum, max_years, hide_senior, hide_native, status_filter, hide_nc, hide_app, show_req
 
 
 def render_listing(country, minimum, max_years, hide_senior, hide_native,
-                   status_filter, hide_nc, show_req):
+                   status_filter, hide_nc, hide_app, show_req):
     st.badge(MARKET_LABELS[country], icon=MARKET_ICONS[country],
              color=MARKET_BADGE.get(country, "gray"))
     if country in MARKET_BLURB:
@@ -432,7 +441,7 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native,
 
     kept, dropped = [], 0
     for j in data:
-        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter, hide_nc)
+        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter, hide_nc, hide_app)
         if verdict is None:
             continue
         if verdict is False:
