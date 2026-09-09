@@ -7,9 +7,10 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
-# One run at a time so the cached job database is never written concurrently.
+# Never let two runs (e.g. a manual dispatch during the daily cron) race on
+# the job-database commit.
 concurrency:
   group: radar
   cancel-in-progress: false
@@ -26,17 +27,6 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      # The job database is not in git (it holds scraped postings and per-run
-      # LLM assessments). Persist it between scheduled runs via the Actions
-      # cache: restore the most recent copy, then save a fresh one each run.
-      - name: Restore job database
-        uses: actions/cache/restore@v4
-        with:
-          path: data/jobs.sqlite3
-          key: jobs-db-${{ github.run_id }}
-          restore-keys: |
-            jobs-db-
-
       - name: Scan sources, LLM-score, send digest
         env:
           # Optional - leave this secret unset entirely to run on free
@@ -52,9 +42,36 @@ jobs:
           CAREERJET_API_KEY: ${{ secrets.CAREERJET_API_KEY }}
         run: python -m radar.cli run
 
-      - name: Save job database
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: data/jobs.sqlite3
-          key: jobs-db-${{ github.run_id }}
+      - name: Commit updated job database
+        run: |
+          git config user.name "global-ai-career-radar-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          if git diff --quiet -- data/jobs.sqlite3; then
+            echo "No database changes to commit."
+            exit 0
+          fi
+
+          # The scan takes a few minutes; main may have moved (a code push, or
+          # another run) since checkout. The freshly-scanned DB always wins -
+          # its rows carry first_seen / notified_at - so reset onto the latest
+          # main, drop the new DB back in, and retry the push a few times.
+          cp data/jobs.sqlite3 "$RUNNER_TEMP/jobs.sqlite3"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp "$RUNNER_TEMP/jobs.sqlite3" data/jobs.sqlite3
+            if git diff --quiet -- data/jobs.sqlite3; then
+              echo "Latest main already has this database."
+              exit 0
+            fi
+            git add data/jobs.sqlite3
+            git commit -m "Update job database"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "push attempt $attempt rejected (main moved), retrying..."
+            sleep $((attempt * 5))
+          done
+          echo "::error::could not push updated job database after 5 attempts"
+          exit 1

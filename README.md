@@ -230,12 +230,11 @@ Ask Claude Code to "score the pending jobs" or run `/score-jobs`.
 ## Scheduled runs
 
 [`.github/workflows/radar.yml`](.github/workflows/radar.yml) runs
-`python -m radar.cli run` daily at **06:00 UTC**. The job database is **not**
-committed (it holds scraped postings and per-run candidate assessments); it is
-carried between scheduled runs via the **Actions cache** (`actions/cache`), so
-`first_seen` / `notified_at` still persist. Set the optional secrets in
-**Settings → Secrets and variables → Actions**; each source/step skips itself if
-its secret is missing.
+`python -m radar.cli run` daily at **06:00 UTC** and commits the updated
+`data/jobs.sqlite3` back to `main` (so `first_seen` / `notified_at` persist). Set
+the optional secrets in **Settings → Secrets and variables → Actions**; each
+source/step skips itself if its secret is missing. Repo **Settings → Actions →
+Workflow permissions** must be "Read and write".
 
 ---
 
@@ -258,5 +257,5 @@ profile/
   scoring.yaml         keyword groups, markets, thresholds, penalties, LLM constraints
 sources.yaml      which job boards to scan
 datasette.json    Datasette facets + canned queries
-data/jobs.sqlite3 the job database (git-ignored; CI caches it between runs)
+data/jobs.sqlite3 the job database (tracked; CI commits it back)
 ```

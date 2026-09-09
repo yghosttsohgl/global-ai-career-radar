@@ -6,7 +6,5 @@ __pycache__/
 # Auto-created by the Streamlit dev skill; symlinks into .venv
 .agents/
 .claude/skills/developing-with-streamlit
-# The job database is NOT committed - it holds scraped postings and per-run
-# LLM assessments of the candidate. Local dev keeps it here; the scheduled
-# GitHub Actions run persists it between runs via actions/cache instead.
-data/jobs.sqlite3
+# data/jobs.sqlite3 is intentionally tracked - GitHub Actions commits it back
+# after each scan so first_seen/notified_at persist across scheduled runs.
