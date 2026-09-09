@@ -140,6 +140,7 @@ sources:
       - "machine learning engineer in Japan"
       - "product manager in Tokyo, Japan"
       - "localization OR data engineer in Japan"
+      - "salesforce OR CRM developer in Japan"
     title_filter: *tech_ops_titles
     enabled: true
 
@@ -217,6 +218,8 @@ sources:
       - https://www.karriere.at/jobs/qualitaetssicherung-test/wien
       - https://www.karriere.at/jobs/qualitatsmanagement/wien
       - https://www.karriere.at/jobs/salesforce/wien
+      - https://www.karriere.at/jobs/salesforce/oesterreich   # Austria-wide - Salesforce roles at product companies (Swarovski Optik, Brau Union, voestalpine, ...)
+      - https://www.karriere.at/jobs/crm/wien
       - https://www.karriere.at/jobs/projektmanagement/wien
       - https://www.karriere.at/jobs/produktmanagement/wien
       - https://www.karriere.at/jobs/business-analyse/wien
@@ -233,8 +236,9 @@ sources:
     adzuna_country: at
     where: Wien
     max_days_old: 30
-    queries: ["software developer", "qa test engineer", "salesforce", "data analyst",
-              "machine learning", "project manager", "product manager", "devops", "business analyst"]
+    queries: ["software developer", "qa test engineer", "salesforce", "salesforce administrator",
+              "salesforce entwickler", "crm", "data analyst", "machine learning",
+              "project manager", "product manager", "devops", "business analyst"]
     title_filter: *tech_ops_titles
     enabled: true
 
@@ -255,6 +259,29 @@ sources:
     country: Austria
     enabled: true
 
+  # Austrian Salesforce / CRM consulting partners with their own careers pages.
+  # No title_filter (like Sakana AI) - a handful of roles each, the scoring
+  # pipeline drops the non-fit ones.
+  - name: allUpp
+    type: html_list
+    url: https://www.allupp.com/karriere
+    country: Austria
+    location: Wien/Graz/Remote
+    # Official Austrian Salesforce partner; Wien/Graz/remote, part-time possible,
+    # covers Salesforce cert costs. Job pages are /jobs/<slug>/.
+    link_pattern: '^/jobs/[a-z0-9-]+/?$'
+    enabled: true
+
+  - name: NETCONOMY
+    type: html_list
+    url: https://netconomy.net/careers/job-openings/
+    country: Austria
+    location: Graz/Vienna
+    # DACH Salesforce + SAP CX partner (Graz HQ). Also posts AI/data/QA roles.
+    # Job pages are /job/<slug>/.
+    link_pattern: '^/job/[a-z0-9-]+/?$'
+    enabled: true
+
   # ---------------- Remote (any location, taken with the EU work permit) ----------------
   - name: Remotive
     type: remotive
@@ -271,7 +298,7 @@ sources:
     country: Remote
     # Keyless, ~100k remote jobs, date-sorted. Pages through the most recent
     # max_pages*20 and keeps the region-eligible tech/ops roles.
-    max_pages: 25
+    max_pages: 40
     location_filter: ["worldwide", "anywhere", "europe", "emea", "global", "germany", "austria"]
     title_filter: *tech_ops_titles
     enabled: true
@@ -293,6 +320,28 @@ sources:
     title_filter: *tech_ops_titles
     enabled: true
 
+  # Jobicy tag-scoped feeds - reach deeper history for one topic than the
+  # 100-most-recent pull above. `endpoint:` adds `&tag=<x>`; {count} is still
+  # filled by the scanner. jobGeo gates region; title_filter trims the sales /
+  # marketing roles the tag also drags in (Jobicy's `tag` is a full-text match).
+  - name: Jobicy Salesforce
+    type: jobicy
+    country: Remote
+    count: 100
+    endpoint: "https://jobicy.com/api/v2/remote-jobs?count={count}&tag=salesforce"
+    location_filter: ["anywhere", "worldwide", "europe", "emea", "global", "germany", "austria", "apac"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: Jobicy LLM
+    type: jobicy
+    country: Remote
+    count: 100
+    endpoint: "https://jobicy.com/api/v2/remote-jobs?count={count}&tag=llm"
+    location_filter: ["anywhere", "worldwide", "europe", "emea", "global", "germany", "austria", "apac"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
   - name: We Work Remotely
     type: weworkremotely
     country: Remote
@@ -302,6 +351,23 @@ sources:
                  "remote-product-jobs", "remote-customer-support-jobs",
                  "remote-quality-assurance-jobs"]
     location_filter: ["anywhere", "worldwide", "europe", "emea", "global", "germany", "austria"]
+    title_filter: *tech_ops_titles
+    enabled: true
+
+  - name: ElevenLabs
+    type: ashby
+    board: elevenlabs
+    country: Remote
+    # Remote-first AI (voice / speech) company that hires across the EU - a strong
+    # domain match for the candidate's TTS/ASR background. Board is ~250 roles
+    # (mostly US-hub), so filter to EU-country / remote locations + tech titles.
+    # EU / EEA locations only (candidate has an Austrian permit, not a UK one) -
+    # a role listing London alongside EU hubs still matches on the EU needle.
+    location_filter: ["remote", "worldwide", "anywhere", "europe", "emea", "global",
+                      "germany", "berlin", "austria", "vienna", "amsterdam", "netherlands",
+                      "dublin", "ireland", "poland", "warsaw", "portugal", "lisbon",
+                      "spain", "madrid", "barcelona", "sweden", "stockholm", "france",
+                      "paris", "italy", "bulgaria", "sofia"]
     title_filter: *tech_ops_titles
     enabled: true
 
