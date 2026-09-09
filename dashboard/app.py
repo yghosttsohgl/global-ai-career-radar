@@ -73,8 +73,13 @@ DEFAULT_RGB = "100,116,139"   # slate
 MARKET_BADGE = {"Japan": "violet", "Austria": "blue", "Remote": "green", "Vienna": "orange"}
 
 FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True,
-                   "status": "All", "hnc": True, "happ": True}
+                   "status": "All", "hnc": True, "happ": True, "hint": True}
 STATUS_FILTER_OPTIONS = ["All", "Unset"] + STATUS_OPTIONS[1:]
+
+# Pinned pseudo-market: a pool of every role hand-tagged "Interested", shown
+# grouped by market rather than as a single market's listing. Kept distinct from
+# the MARKET_NAMES so it can sit above them in the nav.
+INTERESTED_VIEW = "Interested"
 
 init()
 st.set_page_config(page_title="Career Radar", page_icon=":material/radar:", layout="wide")
@@ -203,6 +208,7 @@ def filter_values(country):
         st.session_state.get(f"status_filter_{country}", FILTER_DEFAULTS["status"]),
         st.session_state.get(f"hnc_{country}", FILTER_DEFAULTS["hnc"]),
         st.session_state.get(f"happ_{country}", FILTER_DEFAULTS["happ"]),
+        st.session_state.get(f"hint_{country}", FILTER_DEFAULTS["hint"]),
     )
 
 
@@ -216,7 +222,7 @@ def status_ok(j, status_filter):
 
 
 def passes(j, minimum, max_years, hide_senior, hide_native, status_filter,
-           hide_not_considered, hide_applied):
+           hide_not_considered, hide_applied, hide_interested):
     s = j["application_status"] or ""
     # Rejected jobs drop out of every view unless you explicitly filter to them.
     if s == "Rejected" and status_filter != "Rejected":
@@ -224,6 +230,10 @@ def passes(j, minimum, max_years, hide_senior, hide_native, status_filter,
     if s == "Not considered" and hide_not_considered and status_filter != "Not considered":
         return None
     if s == "Applied" and hide_applied and status_filter != "Applied":
+        return None
+    # 'Interested' roles live in the pinned pool; keep them out of the per-market
+    # listings by default (toggle off, or filter status to 'Interested', to see them).
+    if s == "Interested" and hide_interested and status_filter != "Interested":
         return None
     if not status_ok(j, status_filter):
         return None
@@ -243,6 +253,11 @@ def market_jobs(country):
     return [j for j in all_jobs() if j["country"] == country]
 
 
+def interested_jobs():
+    """Every role hand-tagged 'Interested' (any market), in DB order."""
+    return [j for j in all_jobs() if (j["application_status"] or "") == "Interested"]
+
+
 def filtered_count(country):
     vals = filter_values(country)
     return sum(1 for j in market_jobs(country) if passes(j, *vals) is True)
@@ -253,15 +268,17 @@ def _set_status(fingerprint):
     all_jobs.clear()
 
 
-def _card_style(fingerprint, status):
-    """Per-card scoped CSS: highlight 'Interested', dim 'Not considered'."""
+def _card_style(fingerprint, status, country=None):
+    """Per-card scoped CSS: highlight 'Interested' in the market's accent colour
+    (purple Japan / blue Austria / teal Remote / amber Vienna), dim 'Not considered'."""
     sel = f".st-key-jobcard_{fingerprint}"
     if status == "Interested":
+        rgb = MARKET_RGB.get(country, DEFAULT_RGB)
         return (
             f"<style>{sel}, {sel} [data-testid=\"stVerticalBlockBorderWrapper\"] {{"
-            "border: 2px solid #2563eb !important; border-radius: 0.6rem;"
-            "background: rgba(37, 99, 235, 0.07);"
-            "box-shadow: 0 1px 10px rgba(37, 99, 235, 0.20); }</style>"
+            f"border: 2px solid rgb({rgb}) !important; border-radius: 0.6rem;"
+            f"background: rgba({rgb}, 0.07);"
+            f"box-shadow: 0 1px 10px rgba({rgb}, 0.20); }}</style>"
         )
     if status == "Not considered":
         return f"<style>{sel} {{ opacity: 0.45; filter: grayscale(0.85); }}</style>"
@@ -280,7 +297,7 @@ def render_card(j, show_req=False):
 
     score_color = VERDICT_COLOR.get(verdict, "gray")
 
-    style = _card_style(fp, status)
+    style = _card_style(fp, status, j["country"])
     if style:
         st.html(style)
 
@@ -380,12 +397,32 @@ def nav_css(selected):
 .st-key-nav_{name} button:hover {{ background: rgba({rgb}, {0.32 if sel else 0.18}); }}
 .st-key-nav_{name} button p {{ font-weight: {700 if sel else 600}; }}
 """)
+
+    star, on = "37,99,235", selected == INTERESTED_VIEW
+    rules.append(f"""
+.st-key-nav_interested button {{
+    background: rgba({star}, {0.24 if on else 0.10});
+    border-left: 4px solid rgb({star});
+    {f'box-shadow: inset 0 0 0 2px rgb({star});' if on else ''}
+}}
+.st-key-nav_interested button:hover {{ background: rgba({star}, {0.32 if on else 0.18}); }}
+.st-key-nav_interested button p {{ font-weight: {700 if on else 600}; }}
+""")
     return "<style>" + "\n".join(rules) + "</style>"
 
 
 def render_nav():
-    if st.session_state.get("market") not in MARKET_NAMES:
+    if st.session_state.get("market") not in (*MARKET_NAMES, INTERESTED_VIEW):
         st.session_state["market"] = MARKET_NAMES[0]
+
+    st.markdown("#### Pinned")
+    if st.button(
+        f"Interested  ·  {len(interested_jobs())}",
+        key="nav_interested",
+        icon=":material/star:",
+        width="stretch",
+    ):
+        st.session_state["market"] = INTERESTED_VIEW
 
     st.markdown("#### Markets")
     for name in MARKET_NAMES:
@@ -416,6 +453,10 @@ def render_filters(country):
             "Hide 'Applied' roles", value=FILTER_DEFAULTS["happ"], key=f"happ_{country}",  # hidden by default
             help="Drop roles you've already applied to. Turn off to review them.",
         )
+        hide_int = st.toggle(
+            "Hide 'Interested' roles", value=FILTER_DEFAULTS["hint"], key=f"hint_{country}",  # hidden by default
+            help="Interested roles live in the pinned Interested pool. Turn off to see them in this market's list too.",
+        )
         status_filter = st.selectbox(
             "Application status", STATUS_FILTER_OPTIONS,
             format_func=lambda s: s or "Set status…", key=f"status_filter_{country}",
@@ -424,11 +465,12 @@ def render_filters(country):
             "Show requirements", value=False, key=f"req_{country}",
             help="Show each posting's requirements section (and full text) on the card.",
         )
-    return minimum, max_years, hide_senior, hide_native, status_filter, hide_nc, hide_app, show_req
+    return (minimum, max_years, hide_senior, hide_native, status_filter,
+            hide_nc, hide_app, hide_int, show_req)
 
 
 def render_listing(country, minimum, max_years, hide_senior, hide_native,
-                   status_filter, hide_nc, hide_app, show_req):
+                   status_filter, hide_nc, hide_app, hide_int, show_req):
     st.badge(MARKET_LABELS[country], icon=MARKET_ICONS[country],
              color=MARKET_BADGE.get(country, "gray"))
     if country in MARKET_BLURB:
@@ -441,7 +483,8 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native,
 
     kept, dropped = [], 0
     for j in data:
-        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter, hide_nc, hide_app)
+        verdict = passes(j, minimum, max_years, hide_senior, hide_native, status_filter,
+                         hide_nc, hide_app, hide_int)
         if verdict is None:
             continue
         if verdict is False:
@@ -484,13 +527,61 @@ def render_listing(country, minimum, max_years, hide_senior, hide_native,
             st.pagination(n_pages, key=page_key)
 
 
+def render_interested_pool(show_req=False):
+    """The pinned 'Interested' pool: every hand-tagged role, grouped by market.
+
+    Deliberately ignores the score / seniority / language filters - a role is
+    here because it was explicitly shortlisted. Change a card's status to drop
+    it back out.
+    """
+    st.badge("Interested", icon=":material/star:", color="blue")
+    st.caption(
+        "Every role tagged 'Interested', grouped by market. Change a role's "
+        "status on its card to add or remove it here."
+    )
+
+    data = interested_jobs()
+    if not data:
+        st.info(
+            "No roles tagged 'Interested' yet. Set a role's status to "
+            "'Interested' on its card to build the pool.",
+            icon=":material/star:",
+        )
+        return
+
+    groups = [(name, [j for j in data if j["country"] == name]) for name in MARKET_NAMES]
+    groups = [(name, js) for name, js in groups if js]
+    other = [j for j in data if j["country"] not in MARKET_NAMES]
+
+    summary = "  ·  ".join(f"{MARKET_LABELS[name]} {len(js)}" for name, js in groups)
+    if other:
+        summary += f"  ·  Other {len(other)}"
+    st.markdown(f"**{len(data)} role(s)** &nbsp;—&nbsp; {summary}")
+
+    for name, js in groups:
+        st.divider()
+        st.badge(f"{MARKET_LABELS[name]}  ·  {len(js)}", icon=MARKET_ICONS[name],
+                 color=MARKET_BADGE.get(name, "gray"))
+        for j in sorted(js, key=combined_score, reverse=True):
+            render_card(j, show_req)
+
+    if other:
+        st.divider()
+        st.badge(f"Other  ·  {len(other)}", icon=":material/help:", color="gray")
+        for j in sorted(other, key=combined_score, reverse=True):
+            render_card(j, show_req)
+
+
 st.title(":material/radar: Career Radar")
 
 main_col, aside_col = st.columns([3, 1], gap="large")
 
 with aside_col:
     market = render_nav()
-    active_filters = render_filters(market)
+    active_filters = render_filters(market) if market != INTERESTED_VIEW else None
 
 with main_col:
-    render_listing(market, *active_filters)
+    if market == INTERESTED_VIEW:
+        render_interested_pool()
+    else:
+        render_listing(market, *active_filters)
