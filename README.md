@@ -103,11 +103,13 @@ grouped by market and ignoring the filters:
 
 - **Interested** — every role whose status is `Interested`. Cards are also
   highlighted in their market's accent colour wherever they appear.
-- **Imported** — jobs you added by hand. An **Add a job** form takes a posting
-  URL (click *Fetch details* to prefill title / company / text — many big boards
-  block bots, so pasting the text is the reliable path) or just pasted text,
-  plus a market. On import the job is rule-scored (`source = "Manual import"`)
-  and it always reaches the next LLM scoring run regardless of its rule score.
+- **Imported** — jobs you added by hand. In the **Add a job** form, either
+  **paste** the whole posting (or the page it's on) and hit *Parse* — a
+  heuristic splits it into Title / Company / Market / posting text — or give a
+  **URL** and hit *Fetch details* (many big boards block bots, so paste is the
+  reliable path). Correct the fields, pick a market, import. The job is
+  rule-scored (`source = "Manual import"`) and always reaches the next LLM
+  scoring run regardless of its rule score.
 
 Each card shows the score, verdict badge, `🤖 AI-scored` / `📏 Rule-scored`, the
 authorization + local-language read, strengths/gaps, the LLM's reasoning, and
