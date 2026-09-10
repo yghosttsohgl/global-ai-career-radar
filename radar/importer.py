@@ -5,6 +5,7 @@ Used by the dashboard's "Imported" pool. Imported jobs get
 reach the LLM scoring pass regardless of their rule score.
 """
 import hashlib
+import json
 import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -44,17 +45,75 @@ def import_job(*, title, company="", country="Unknown", description="", url="", 
     return j
 
 
-def fetch_posting(url):
-    """Best-effort ``{title, company, description, url}`` from a job-posting URL.
+def _jsonld_jobpostings(soup):
+    """Every schema.org JobPosting object embedded in the page (SEO markup that
+    LinkedIn, Indeed, karriere.at, most ATSes emit)."""
+    found = []
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string or "{}")
+        except (ValueError, TypeError):
+            continue
+        stack = data if isinstance(data, list) else [data]
+        for obj in stack:
+            if not isinstance(obj, dict):
+                continue
+            graph = obj.get("@graph")
+            if isinstance(graph, list):
+                stack.extend(graph)
+            if obj.get("@type") == "JobPosting" or "JobPosting" in (obj.get("@type") or []):
+                found.append(obj)
+    return found
 
-    Never raises for a bad page - returns whatever could be read, plus an
-    ``error`` key when the fetch itself failed. Many big boards (LinkedIn,
-    Indeed) block bots or show a login wall; fall back to pasting the text.
+
+def _from_jobposting(jp):
+    org = jp.get("hiringOrganization") or {}
+    if isinstance(org, list):
+        org = org[0] if org else {}
+    loc = jp.get("jobLocation") or {}
+    if isinstance(loc, list):
+        loc = loc[0] if loc else {}
+    addr = (loc or {}).get("address") or {}
+    country = addr.get("addressCountry")
+    if isinstance(country, dict):
+        country = country.get("name")
+    remote = str(jp.get("jobLocationType") or "").upper() == "TELECOMMUTE" or bool(
+        jp.get("applicantLocationRequirements"))
+    place = " ".join(str(x) for x in (addr.get("addressLocality"), addr.get("addressRegion"),
+                                      country, "remote" if remote else "") if x)
+    from .scanners import clean_text
+    return {
+        "title": (jp.get("title") or "").strip(),
+        "company": (org.get("name") or "").strip(),
+        "description": clean_text(jp.get("description") or ""),
+        "_place": place,
+    }
+
+
+_LIST_TITLE = re.compile(r"\bjobs?\b.*\b(in|offen|open|results|suche|search)\b|"
+                         r"\b\d+\+?\s+(jobs?|offen|open|stellen)\b", re.I)
+
+
+def fetch_posting(url):
+    """Best-effort ``{title, company, description, market, url}`` from a job URL.
+
+    Prefers embedded schema.org JobPosting markup; falls back to og:/main-content
+    scraping. Never raises for a bad page - returns whatever could be read, plus
+    ``error`` (fetch failed) or ``hint`` (looks like a search/list page). Many
+    big boards block bots or show a login wall; fall back to pasting the text.
     """
     from .scanners import clean_text, fetch  # shared HTTP client + text cleaner
 
     url = (url or "").strip()
-    out = {"title": "", "company": "", "description": "", "url": url}
+    out = {"title": "", "company": "", "description": "", "market": "", "url": url}
+
+    parts = urlparse(url)
+    # karriere.at: a "#<id>" anchor on a search page -> the real posting is /jobs/<id>
+    if "karriere.at" in parts.netloc and parts.fragment.isdigit() \
+       and not re.search(r"/\d{5,}", parts.path):
+        url = f"https://www.karriere.at/jobs/{parts.fragment}"
+        out["url"] = url
+
     try:
         html = fetch(url).text
     except Exception as e:  # noqa: BLE001 - surfaced to the user, not fatal
@@ -62,6 +121,17 @@ def fetch_posting(url):
         return out
 
     soup = BeautifulSoup(html, "html.parser")
+    markets = list(_scoring()["markets"])
+
+    postings = _jsonld_jobpostings(soup)
+    if len(postings) == 1:
+        jp = _from_jobposting(postings[0])
+        out.update({k: v for k, v in jp.items() if not k.startswith("_")})
+        out["market"] = guess_market(f"{jp['_place']} {jp['description']}", markets)
+        return out
+    if len(postings) > 1:
+        out["hint"] = ("That page lists several jobs. Open the specific posting "
+                       "and use its URL, or paste the text instead.")
 
     def meta(*names):
         for n in names:
@@ -70,11 +140,19 @@ def fetch_posting(url):
                 return tag["content"].strip()
         return ""
 
-    out["title"] = meta("og:title", "twitter:title") or (
+    title = meta("og:title", "twitter:title") or (
         soup.title.get_text(strip=True) if soup.title else "")
-    out["company"] = meta("og:site_name") or urlparse(url).netloc.replace("www.", "")
-    out["description"] = clean_text(html)
-    out["market"] = guess_market(out["description"], list(_scoring()["markets"]))
+    main = (soup.find("main") or soup.find("article") or soup.find(attrs={"role": "main"})
+            or soup.find(id=re.compile("content|job|posting", re.I)))
+    body_html = str(main) if main else html
+
+    out["title"] = title
+    out["company"] = meta("og:site_name") or parts.netloc.replace("www.", "")
+    out["description"] = clean_text(body_html)
+    out["market"] = guess_market(out["description"], markets)
+    if not out.get("hint") and _LIST_TITLE.search(title):
+        out["hint"] = ("That looks like a search-results page, not one posting. "
+                       "Open the job itself and use its URL, or paste the text.")
     return out
 
 

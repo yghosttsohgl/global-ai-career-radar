@@ -1,5 +1,5 @@
 """Manual-import path: import_job builds a rule-scored, tagged Job (no DB write)."""
-from radar.importer import SOURCE, import_job, parse_posting
+from radar.importer import SOURCE, _from_jobposting, import_job, parse_posting
 
 
 def test_import_job_builds_a_scored_manual_job():
@@ -50,3 +50,19 @@ def test_parse_posting_splits_a_pasted_page():
 def test_parse_posting_defaults_to_remote():
     r = parse_posting("Backend Engineer\nWe are a fully remote team.", ["Japan", "Austria", "Remote"])
     assert r["market"] == "Remote"
+
+
+def test_from_jobposting_reads_schema_org_fields():
+    jp = {
+        "@type": "JobPosting",
+        "title": "Salesforce Consultant (w/m/d)",
+        "hiringOrganization": {"name": "Acme GmbH"},
+        "jobLocation": {"address": {"addressLocality": "Wien", "addressCountry": "AT"}},
+        "description": "<p>Build Salesforce solutions.</p><ul><li>Apex</li></ul>",
+    }
+    out = _from_jobposting(jp)
+    assert out["title"] == "Salesforce Consultant (w/m/d)"
+    assert out["company"] == "Acme GmbH"
+    assert "Wien" in out["_place"] and "AT" in out["_place"]
+    assert "Build Salesforce solutions" in out["description"]
+    assert "<p>" not in out["description"]

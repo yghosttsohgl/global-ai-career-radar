@@ -620,6 +620,8 @@ def _import_form():
                     st.session_state["imp_seed"] = res
                     st.rerun()
 
+        if seed.get("hint"):
+            st.warning(seed["hint"], icon=":material/info:")
         st.caption("Check the parsed fields below before importing.")
         with st.form("import_job", border=False):
             c1, c2 = st.columns([3, 2])
@@ -639,7 +641,8 @@ def _import_form():
                 st.error("A title is required.")
             else:
                 j = import_job(title=title, company=company, country=country,
-                               description=description, url=st.session_state.get("imp_url", ""))
+                               description=description,
+                               url=seed.get("url") or st.session_state.get("imp_url", ""))
                 save(j)
                 for k in ("imp_seed", "imp_blob", "imp_url"):
                     st.session_state.pop(k, None)

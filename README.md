@@ -106,8 +106,11 @@ grouped by market and ignoring the filters:
 - **Imported** — jobs you added by hand. In the **Add a job** form, either
   **paste** the whole posting (or the page it's on) and hit *Parse* — a
   heuristic splits it into Title / Company / Market / posting text — or give a
-  **URL** and hit *Fetch details* (many big boards block bots, so paste is the
-  reliable path). Correct the fields, pick a market, import. The job is
+  **URL** and hit *Fetch details*. The fetch reads embedded schema.org
+  `JobPosting` markup when a page has it (clean title / company / location),
+  resolves a karriere.at `#id` anchor to the real posting, and warns when the
+  URL is a search-results page; many big boards block bots, so paste stays the
+  reliable path. Correct the fields, pick a market, import. The job is
   rule-scored (`source = "Manual import"`) and always reaches the next LLM
   scoring run regardless of its rule score.
 
