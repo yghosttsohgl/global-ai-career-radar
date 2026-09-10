@@ -183,6 +183,54 @@ _LOC_HINT = re.compile(
     r"\b(remote|global|worldwide|hybrid|on-?site|anywhere|emea|apac|europe|"
     r"united states|usa|uk|full[- ]time|part[- ]time)\b|\(", re.I)
 
+# a section heading ("Your tasks", "Das sind wir", ...) - never a job title
+_SECTION_HEADER = re.compile(
+    r"^(stellen(beschreibung|angebot|titel|inserat)|das sind wir|das bieten wir( dir)?|"
+    r"das erwartet dich|das solltest du mitbringen|deine (aufgaben|rolle|benefits|vorteile)|"
+    r"dein (profil|aufgabengebiet)|ihre (aufgaben|rolle|chancen)|ihr profil|dein aufgabengebiet|"
+    r"wir bieten|wir suchen|was wir (dir )?bieten|was dich erwartet|aufgaben(gebiet)?|profil|"
+    r"benefits|unser angebot|unser unternehmen|über uns|zu (deinen|ihren) aufgaben|"
+    r"about (us|the (role|team|company|job|position))|your (role|profile|mission|impact|team|"
+    r"responsibilities|opportunity)|the (role|opportunity|position|team|company)|responsibilities|"
+    r"requirements|what you('| wi)ll do|what we offer|what we're looking for|who (we are|you are)|"
+    r"qualifications|job description|description|overview|summary|role overview|about this role)"
+    r"\s*[:.]?\s*$", re.I)
+
+# a line that reads as running prose, not a heading / title
+_SENTENCE_START = re.compile(
+    r"^(du|sie|wir|ihr|ich|you|we|our|your|as |als |gemeinsam|together|in dieser|in this|"
+    r"for (our|this|us)|für (unser|diese|uns)|wenn du|if you|bei uns|at our|unser[e]?|"
+    r"the |this |these |diese[rs]?|das |join |werde |become |help |hilf |seit |since |founded|"
+    r"gegründet|zur verstärkung|to strengthen)\b", re.I)
+_SENTENCE_MID = re.compile(
+    r"\b(mit der/dem|mit der |mit dem |an den |an die |as part of|teil des|teil der|im rahmen|"
+    r"gemeinsam mit|sowie |und die |and the |verantwortlich für|responsible for)\b", re.I)
+
+# German legal-form company suffixes
+_CO_SUFFIX = r"AG|GmbH|SE|GesmbH|Ges\.m\.b\.H\.|mbH|KG|OG|KGaA|e\.?V\.?|gGmbH|AG\s*&\s*Co\.?\s*KG"
+_DE_CO_ARTICLE = re.compile(
+    r"\b(?:der|die|das|dem|des|bei|beim|von|vom)\s+"
+    r"([A-ZÄÖÜ][\wÄÖÜäöüß.&\-]*(?:\s+[A-ZÄÖÜ][\wÄÖÜäöüß.&\-]*){0,3})\s+(" + _CO_SUFFIX + r")\b")
+_DE_CO_PLAIN = re.compile(
+    r"\b([A-ZÄÖÜ][\wÄÖÜäöüß.&\-]*(?:\s+[A-ZÄÖÜ][\wÄÖÜäöüß.&\-]*){0,3})\s+(" + _CO_SUFFIX + r")\b")
+_DE_CO_VERB = re.compile(
+    r"^([A-ZÄÖÜ][\wÄÖÜäöüß.&\-]*(?:\s+[A-ZÄÖÜ][\wÄÖÜäöüß.&\-]*){0,3})\s+"
+    r"(?:sucht|ist ein|ist eine|ist einer|ist der|ist die|ist das|bietet|gehört|steht für)\b",
+    re.M)
+_DE_TITLE_PHRASE = re.compile(
+    r"^(?:Unser|Unsere|Das|Die|Der)\s+"
+    r"([A-ZÄÖÜ][\wÄÖÜäöüß /&*.\-]{5,70}?)\s+(?:der|des|von|bei|für|am|in)\s+[A-ZÄÖÜ]", re.M)
+
+
+def _dedecline(name):
+    """'Österreichischen Post' -> 'Österreichische Post' (trim a declined
+    leading adjective picked up after a definite article)."""
+    head, _, rest = name.partition(" ")
+    if rest and len(head) > 5 and head.lower().endswith(("chen", "schen", "gen", "ten", "ken",
+                                                         "nen", "ben", "men", "len", "ren", "sen")):
+        head = head[:-1]
+    return (head + " " + rest).strip() if rest else name
+
 
 def _lines(text):
     out = []
@@ -217,21 +265,39 @@ def guess_market(text, markets):
     return "Remote" if "Remote" in markets else (markets[0] if markets else "Remote")
 
 
+def _is_sentence(s):
+    """A line that reads as running prose rather than a heading or a title."""
+    return bool(
+        _SENTENCE_START.match(s) or _SENTENCE_MID.search(s)
+        or s.endswith((".", "!", "?", ":", ";", ",")) or len(s.split()) > 12
+    )
+
+
+def _clean_title(s):
+    # drop a trailing " at Company" / " | Company" / " - Location" tail
+    for sep in (" at ", " — ", " – ", " | ", " @ ", " · "):
+        if sep in s:
+            s = s.split(sep, 1)[0].strip()
+    return s.strip(" -–—|·,")
+
+
 def _guess_title(lines):
-    head = lines[:40]
-    # a line that names a role, of sensible length, not chrome
-    for s in head:
-        if not _is_chrome(s) and _ROLE_WORDS.search(s) \
-           and 2 <= len(s.split()) <= 18 and len(s) <= 140:
-            return s
-    # else the first content-shaped line
-    for s in head:
-        if _is_chrome(s):
-            continue
-        n = len(s.split())
-        if 2 <= n <= 16 and 6 <= len(s) <= 140 and not s.endswith((":", ".", "?")):
-            return s
-    return lines[0] if lines else ""
+    head = [s for s in lines[:25]
+            if not _is_chrome(s) and not _SECTION_HEADER.match(s)]
+    cands = [s for s in head
+             if not _is_sentence(s) and 2 <= len(s.split()) <= 14 and 6 <= len(s) <= 120]
+    # 1. best: a short line that names a role
+    for s in cands:
+        if _ROLE_WORDS.search(s):
+            return _clean_title(s)
+    # 2. a "Unser <X> der <Company>" opener - common in German postings
+    m = _DE_TITLE_PHRASE.search("\n".join(lines[:12]))
+    if m and 2 <= len(m.group(1).split()) <= 8:
+        return m.group(1).strip()
+    # 3. the first plain noun-phrase line near the top
+    for s in cands[:4]:
+        return _clean_title(s)
+    return ""
 
 
 def _guess_company(text, title):
@@ -242,13 +308,28 @@ def _guess_company(text, title):
                 if (_ROLE_WORDS.search(role_side) and not _ROLE_WORDS.search(other)
                         and not _LOC_HINT.search(other) and 2 <= len(other) <= 50):
                     return other
-    for pat in (r"\bAbout ([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3})\b",
+    text = text or ""
+    # German: "... der Österreichischen Post AG ...", "bei der Acme GmbH ..."
+    m = _DE_CO_ARTICLE.search(text)
+    if m:
+        return _dedecline(f"{m.group(1)} {m.group(2)}")
+    # German: "Acme GmbH sucht ...", "Die Acme AG ist ..."
+    m = _DE_CO_VERB.search(text)
+    if m:
+        return re.sub(r"^(Die|Der|Das)\s+", "", m.group(1)).strip()
+    # English openers
+    for pat in (r"\bAbout (?:us at |the team at |working at )?"
+                r"([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3})\b",
                 r"\bJoin ([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3})\b",
                 r"^([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3}) is (?:a|an|the|building|hiring|"
                 r"looking|on a mission)\b"):
-        m = re.search(pat, text or "", re.M)
-        if m:
+        m = re.search(pat, text, re.M)
+        if m and m.group(1).strip().lower() not in ("us", "the role", "the team"):
             return m.group(1).strip()
+    # last resort: any "<Name> GmbH/AG/SE" token anywhere in the body
+    m = _DE_CO_PLAIN.search(text)
+    if m:
+        return _dedecline(f"{m.group(1)} {m.group(2)}")
     return ""
 
 

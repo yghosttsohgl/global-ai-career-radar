@@ -47,6 +47,28 @@ def test_parse_posting_splits_a_pasted_page():
     assert "builds robots" in r["description"]
 
 
+def test_parse_posting_handles_a_german_posting():
+    blob = (
+        "Stellenbeschreibung:\n"
+        "Das sind wir\n"
+        "Unser Key Account Management Asia-Pacific der Österreichischen Post AG ist "
+        "die Schnittstelle zu unseren Konzernkunden.\n"
+        "Deine Aufgaben\n"
+        "Du nimmst gemeinsam mit der/dem Key Account Manager*in als Teil des "
+        "Vertriebsteams an Kund*innenterminen mit den Konzernkunden teil\n"
+        "Du unterstützt bei der Angebotslegung\n"
+        "Dein Profil\n"
+        "Abgeschlossene kaufmännische Ausbildung\n"
+        "Wir bieten\n"
+        "Ein Bruttojahresgehalt von mindestens 35.000 ,- Euro\n"
+    )
+    r = parse_posting(blob, ["Japan", "Austria", "Remote", "Vienna"])
+    assert r["company"] == "Österreichische Post AG"
+    assert not r["title"].startswith("Du ")  # not a responsibility bullet
+    assert not r["title"].endswith(":")      # not a section header
+    assert r["market"] == "Austria"
+
+
 def test_parse_posting_defaults_to_remote():
     r = parse_posting("Backend Engineer\nWe are a fully remote team.", ["Japan", "Austria", "Remote"])
     assert r["market"] == "Remote"
