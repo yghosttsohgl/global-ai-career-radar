@@ -1,5 +1,5 @@
 """Manual-import path: import_job builds a rule-scored, tagged Job (no DB write)."""
-from radar.importer import SOURCE, import_job
+from radar.importer import SOURCE, import_job, parse_posting
 
 
 def test_import_job_builds_a_scored_manual_job():
@@ -28,3 +28,25 @@ def test_import_job_fingerprint_is_stable_and_requires_a_title():
         pass
     else:  # pragma: no cover
         raise AssertionError("blank title should raise ValueError")
+
+
+def test_parse_posting_splits_a_pasted_page():
+    blob = (
+        "Skip to content\nJobs  Companies  Salaries\n"
+        "Home > Engineering > Senior ML Engineer\n"
+        "Senior Machine Learning Engineer at Acme Robotics\n"
+        "Tokyo, Japan · Full-time\n"
+        "About Acme Robotics\nAcme Robotics builds robots.\n"
+        "We use cookies. Accept all\n"
+    )
+    r = parse_posting(blob, ["Japan", "Austria", "Remote", "Vienna"])
+    assert set(r) == {"title", "company", "description", "market"}
+    assert "Machine Learning Engineer" in r["title"]
+    assert r["company"] == "Acme Robotics"
+    assert r["market"] == "Japan"
+    assert "builds robots" in r["description"]
+
+
+def test_parse_posting_defaults_to_remote():
+    r = parse_posting("Backend Engineer\nWe are a fully remote team.", ["Japan", "Austria", "Remote"])
+    assert r["market"] == "Remote"

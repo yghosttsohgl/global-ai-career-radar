@@ -5,11 +5,13 @@ Used by the dashboard's "Imported" pool. Imported jobs get
 reach the LLM scoring pass regardless of their rule score.
 """
 import hashlib
+import re
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
+from .config import scoring as _scoring
 from .models import Job
 from .scoring import evaluate
 
@@ -72,4 +74,118 @@ def fetch_posting(url):
         soup.title.get_text(strip=True) if soup.title else "")
     out["company"] = meta("og:site_name") or urlparse(url).netloc.replace("www.", "")
     out["description"] = clean_text(html)
+    out["market"] = guess_market(out["description"], list(_scoring()["markets"]))
     return out
+
+
+# --- parse a pasted job posting / page --------------------------------------
+
+_CHROME = re.compile(
+    r"^(home|jobs?|careers?|open roles?|all jobs|view all|back to (search|jobs|results)|"
+    r"search|menu|filters?|sign ?in|log ?in|register|apply( now)?|share|save( job)?|print|"
+    r"report (this )?job|follow|we use cookies|accept( all)?( cookies)?|"
+    r"cookie (settings|preferences|policy)|manage cookies|skip to (main )?content|"
+    r"breadcrumb|posted \d|\d+ (days?|hours?|weeks?|months?) ago|full[- ]time|part[- ]time)$",
+    re.I,
+)
+_MARKET_CUES = {
+    "Japan": ("japan", " tokyo", "osaka", "kyoto", "yokohama", "日本", "東京", "大阪", "jlpt", "日本語"),
+    "Austria": ("austria", "österreich", "oesterreich", "vienna", " wien", "graz", "linz",
+                "salzburg", "innsbruck"),
+}
+_REMOTE_CUES = ("fully remote", "100% remote", "work from anywhere", "remote-first",
+                "anywhere in the world", "globally remote", "remote (global", "worldwide")
+_ROLE_WORDS = re.compile(
+    r"\b(engineer|manager|developer|designer|analyst|scientist|specialist|lead|architect|"
+    r"consultant|director|officer|intern|associate|coordinator|administrator|owner|"
+    r"researcher|marketer|recruiter|writer|producer|strategist|verkäufer|entwickler|"
+    r"berater|kellner|barista)\b", re.I)
+# strings that look like a location or job attribute, not a company name
+_LOC_HINT = re.compile(
+    r"\b(remote|global|worldwide|hybrid|on-?site|anywhere|emea|apac|europe|"
+    r"united states|usa|uk|full[- ]time|part[- ]time)\b|\(", re.I)
+
+
+def _lines(text):
+    out = []
+    for raw in (text or "").splitlines():
+        s = re.sub(r"[ \t ]+", " ", raw).strip(" \t •·‣▪◦-–—*|>»«")
+        if s:
+            out.append(s)
+    return out
+
+
+def _is_chrome(s):
+    """A nav / breadcrumb / cookie-banner line, not job content."""
+    if _CHROME.match(s) or " > " in s or " » " in s:
+        return True
+    if s.lower().startswith(("http://", "https://", "www.", "home ", "home|", "home>")):
+        return True
+    words = s.split()  # a short row of Capitalised words with no role word = a nav bar
+    return (2 <= len(words) <= 6 and len(s) < 40 and not _ROLE_WORDS.search(s)
+            and all(w[:1].isupper() for w in words if w[:1].isalpha()))
+
+
+def guess_market(text, markets):
+    """Best guess at which configured market a posting belongs to."""
+    t = (text or "").lower()
+    if "Remote" in markets and any(c in t for c in _REMOTE_CUES):
+        return "Remote"
+    for m in ("Japan", "Austria"):
+        if m in markets and any(c in t for c in _MARKET_CUES[m]):
+            return m
+    if "Remote" in markets and "remote" in t:
+        return "Remote"
+    return "Remote" if "Remote" in markets else (markets[0] if markets else "Remote")
+
+
+def _guess_title(lines):
+    head = lines[:40]
+    # a line that names a role, of sensible length, not chrome
+    for s in head:
+        if not _is_chrome(s) and _ROLE_WORDS.search(s) \
+           and 2 <= len(s.split()) <= 18 and len(s) <= 140:
+            return s
+    # else the first content-shaped line
+    for s in head:
+        if _is_chrome(s):
+            continue
+        n = len(s.split())
+        if 2 <= n <= 16 and 6 <= len(s) <= 140 and not s.endswith((":", ".", "?")):
+            return s
+    return lines[0] if lines else ""
+
+
+def _guess_company(text, title):
+    for sep in (" at ", " — ", " – ", " | ", " @ ", " - ", " · "):
+        if sep in title:
+            a, b = (p.strip() for p in title.split(sep, 1))
+            for role_side, other in ((a, b), (b, a)):
+                if (_ROLE_WORDS.search(role_side) and not _ROLE_WORDS.search(other)
+                        and not _LOC_HINT.search(other) and 2 <= len(other) <= 50):
+                    return other
+    for pat in (r"\bAbout ([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3})\b",
+                r"\bJoin ([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3})\b",
+                r"^([A-Z][\w&.\-]+(?: [A-Z][\w&.\-]+){0,3}) is (?:a|an|the|building|hiring|"
+                r"looking|on a mission)\b"):
+        m = re.search(pat, text or "", re.M)
+        if m:
+            return m.group(1).strip()
+    return ""
+
+
+def parse_posting(text, markets=None):
+    """Split pasted job/page text into ``{title, company, description, market}``.
+
+    Heuristic and best-effort - the dashboard prefills the form with this and the
+    user corrects it. ``description`` is the whole pasted text, whitespace-tidied.
+    """
+    markets = markets or list(_scoring()["markets"])
+    lines = _lines(text)
+    title = _guess_title(lines)
+    return {
+        "title": title,
+        "company": _guess_company(text, title),
+        "description": "\n".join(lines),
+        "market": guess_market(text, markets),
+    }

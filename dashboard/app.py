@@ -9,7 +9,7 @@ import streamlit as st
 
 from radar.config import scoring as scoring_config
 from radar.db import init, jobs, save, set_application_status
-from radar.importer import fetch_posting, import_job
+from radar.importer import fetch_posting, import_job, parse_posting
 from radar.scoring import is_senior_title, required_years, requires_native_language
 
 PER_PAGE = 10
@@ -590,33 +590,48 @@ def render_interested_pool(show_req=False):
 
 
 def _import_form():
-    """The 'add a job' form for the Imported pool. Paste text, or fetch a URL to
-    prefill, then pick a market and import. Rule-scored on save; picked up by the
-    next LLM scoring run regardless of score."""
+    """The 'add a job' form for the Imported pool. Paste the whole posting (or the
+    page it's on) and hit Parse to split it into Title / Company / Market / text -
+    or fetch a URL - then correct and import. Rule-scored on save; picked up by
+    the next LLM scoring run regardless of score."""
     seed = st.session_state.get("imp_seed", {})
 
     with st.expander("Add a job", icon=":material/note_add:",
                      expanded=not imported_jobs()):
-        url = st.text_input("Job URL", key="imp_url",
-                            placeholder="https://…  (optional — paste the text below instead)")
-        if st.button("Fetch details", icon=":material/download:", disabled=not url.strip()):
-            res = fetch_posting(url)
-            if res.get("error"):
-                st.warning(f"Couldn't fetch that page ({res['error']}). "
-                           "Paste the posting text instead.", icon=":material/warning:")
-            else:
-                st.session_state["imp_seed"] = res
+        paste_tab, url_tab = st.tabs(["Paste text", "From URL"])
+        with paste_tab:
+            blob = st.text_area(
+                "Paste the whole job posting (or the page it's on)", key="imp_blob", height=150,
+                placeholder="Select-all on the posting, copy, paste here — then Parse",
+            )
+            if st.button("Parse", key="imp_parse_btn", icon=":material/auto_fix_high:",
+                         disabled=not blob.strip()):
+                st.session_state["imp_seed"] = parse_posting(blob, MARKET_NAMES)
                 st.rerun()
+        with url_tab:
+            url = st.text_input("Job URL", key="imp_url", placeholder="https://…")
+            if st.button("Fetch details", key="imp_fetch_btn", icon=":material/download:",
+                         disabled=not url.strip()):
+                res = fetch_posting(url)
+                if res.get("error"):
+                    st.warning(f"Couldn't fetch that page ({res['error']}). "
+                               "Paste the posting text instead.", icon=":material/warning:")
+                else:
+                    st.session_state["imp_seed"] = res
+                    st.rerun()
 
+        st.caption("Check the parsed fields below before importing.")
         with st.form("import_job", border=False):
             c1, c2 = st.columns([3, 2])
             title = c1.text_input("Title", value=seed.get("title", ""))
             company = c2.text_input("Company", value=seed.get("company", ""))
-            default_market = MARKET_NAMES.index("Remote") if "Remote" in MARKET_NAMES else 0
-            country = st.selectbox("Market", MARKET_NAMES, index=default_market,
+            guess = seed.get("market")
+            idx = (MARKET_NAMES.index(guess) if guess in MARKET_NAMES
+                   else MARKET_NAMES.index("Remote") if "Remote" in MARKET_NAMES else 0)
+            country = st.selectbox("Market", MARKET_NAMES, index=idx,
                                    format_func=lambda m: MARKET_LABELS[m])
             description = st.text_area("Posting text", value=seed.get("description", ""),
-                                       height=220, placeholder="Paste the full job description here")
+                                       height=220, placeholder="The full job description")
             submitted = st.form_submit_button("Import job", icon=":material/add:", type="primary")
 
         if submitted:
@@ -626,7 +641,8 @@ def _import_form():
                 j = import_job(title=title, company=company, country=country,
                                description=description, url=st.session_state.get("imp_url", ""))
                 save(j)
-                st.session_state.pop("imp_seed", None)
+                for k in ("imp_seed", "imp_blob", "imp_url"):
+                    st.session_state.pop(k, None)
                 all_jobs.clear()
                 st.success(f"Imported **{j.title}** into {MARKET_LABELS[country]}. "
                            "It'll get an AI verdict on the next scoring run.",
