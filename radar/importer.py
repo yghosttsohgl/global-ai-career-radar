@@ -177,7 +177,14 @@ _ROLE_WORDS = re.compile(
     r"\b(engineer|manager|developer|designer|analyst|scientist|specialist|lead|architect|"
     r"consultant|director|officer|intern|associate|coordinator|administrator|owner|"
     r"researcher|marketer|recruiter|writer|producer|strategist|verkäufer|entwickler|"
-    r"berater|kellner|barista)\b", re.I)
+    r"berater|kellner|barista|mitarbeiter|sachbearbeiter|referent|praktikant|werkstudent|"
+    r"leiter|leitung|fachkraft|assistenz|assistent|vertrieb|vertriebsinnendienst|innendienst|"
+    r"außendienst|aussendienst|buchhalter|disponent|techniker|geschäftsführer|sekretär|"
+    r"pfleger|koch|verkauf|ingenieur|architekt|projektleiter|teamleiter)\b", re.I)
+# gender markers - a line carrying one is almost always the job title
+_GENDER_TAG = re.compile(
+    r"\((?:[wmfdx]/[wmfdx]/[wmfdx]|[wmfd]/[wmfd]|all genders|a\*|w/m/divers|m/w/gn)\)"
+    r"|\b[wmfd]/[wmfd]/[wmfdx]\b|\*in\b|:in\b|\(m/w\)|\(w/m\)", re.I)
 # strings that look like a location or job attribute, not a company name
 _LOC_HINT = re.compile(
     r"\b(remote|global|worldwide|hybrid|on-?site|anywhere|emea|apac|europe|"
@@ -283,10 +290,15 @@ def _clean_title(s):
 
 def _guess_title(lines):
     head = [s for s in lines[:25]
-            if not _is_chrome(s) and not _SECTION_HEADER.match(s)]
+            if not _is_chrome(s) and not _SECTION_HEADER.match(s)
+            and not s.lower().endswith(" logo")]
     cands = [s for s in head
-             if not _is_sentence(s) and 2 <= len(s.split()) <= 14 and 6 <= len(s) <= 120]
-    # 1. best: a short line that names a role
+             if not _is_sentence(s) and 2 <= len(s.split()) <= 16 and 6 <= len(s) <= 140]
+    # 0. a line carrying a gender marker "(w/m/d)" / "*in" is almost always the title
+    for s in cands:
+        if _GENDER_TAG.search(s):
+            return _clean_title(s)
+    # 1. a short line that names a role
     for s in cands:
         if _ROLE_WORDS.search(s):
             return _clean_title(s)

@@ -49,14 +49,19 @@ def test_parse_posting_splits_a_pasted_page():
 
 def test_parse_posting_handles_a_german_posting():
     blob = (
-        "Stellenbeschreibung:\n"
+        "Österreichische Post AG logo\n"
+        "Mitarbeiter*in Vertriebsinnendienst Key Account Management Asia-Pacific (w/m/d)\n"
+        "Österreichische Post AG\n"
+        "Wien\n"
+        "Feste Anstellung\n"
+        "Vollzeit\n"
+        "Erschienen: vor 9 Stunden\n"
         "Das sind wir\n"
         "Unser Key Account Management Asia-Pacific der Österreichischen Post AG ist "
         "die Schnittstelle zu unseren Konzernkunden.\n"
         "Deine Aufgaben\n"
         "Du nimmst gemeinsam mit der/dem Key Account Manager*in als Teil des "
         "Vertriebsteams an Kund*innenterminen mit den Konzernkunden teil\n"
-        "Du unterstützt bei der Angebotslegung\n"
         "Dein Profil\n"
         "Abgeschlossene kaufmännische Ausbildung\n"
         "Wir bieten\n"
@@ -64,8 +69,8 @@ def test_parse_posting_handles_a_german_posting():
     )
     r = parse_posting(blob, ["Japan", "Austria", "Remote", "Vienna"])
     assert r["company"] == "Österreichische Post AG"
-    assert not r["title"].startswith("Du ")  # not a responsibility bullet
-    assert not r["title"].endswith(":")      # not a section header
+    assert "Vertriebsinnendienst" in r["title"]  # the real title line, not the logo/bullet
+    assert not r["title"].startswith("Du ")
     assert r["market"] == "Austria"
 
 
