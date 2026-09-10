@@ -98,6 +98,17 @@ values are unchanged. Filters:
   requirements/profile section (best-effort extraction) plus its full text, so
   you can skim requirements without opening every posting.
 
+Above the markets the nav has two **pinned pools**, each showing its contents
+grouped by market and ignoring the filters:
+
+- **Interested** — every role whose status is `Interested`. Cards are also
+  highlighted in their market's accent colour wherever they appear.
+- **Imported** — jobs you added by hand. An **Add a job** form takes a posting
+  URL (click *Fetch details* to prefill title / company / text — many big boards
+  block bots, so pasting the text is the reliable path) or just pasted text,
+  plus a market. On import the job is rule-scored (`source = "Manual import"`)
+  and it always reaches the next LLM scoring run regardless of its rule score.
+
 Each card shows the score, verdict badge, `🤖 AI-scored` / `📏 Rule-scored`, the
 authorization + local-language read, strengths/gaps, the LLM's reasoning, and
 (for AI-scored jobs) suggested CV bullets. Results are paged 10 at a time.
@@ -246,6 +257,7 @@ radar/            scan + score + digest pipeline
   config.py       loads profile/scoring.yaml, master_profile.yaml, sources.yaml
   scoring.py      generic rule engine (reads config.py)
   llm_scoring.py  LLM pass + manual-scoring read/write helpers
+  importer.py     manual single-job import (dashboard "Imported" pool)
   scanners/       one self-registering module per job-board platform + shared helpers/ENDPOINTS
   digest.py       email digest
   db.py           SQLite schema + upsert

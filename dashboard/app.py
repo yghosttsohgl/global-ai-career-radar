@@ -8,7 +8,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import streamlit as st
 
 from radar.config import scoring as scoring_config
-from radar.db import init, jobs, set_application_status
+from radar.db import init, jobs, save, set_application_status
+from radar.importer import fetch_posting, import_job
 from radar.scoring import is_senior_title, required_years, requires_native_language
 
 PER_PAGE = 10
@@ -76,10 +77,12 @@ FILTER_DEFAULTS = {"min": 40, "yrs": CANDIDATE_YEARS, "snr": True, "nat": True,
                    "status": "All", "hnc": True, "happ": True, "hint": True}
 STATUS_FILTER_OPTIONS = ["All", "Unset"] + STATUS_OPTIONS[1:]
 
-# Pinned pseudo-market: a pool of every role hand-tagged "Interested", shown
-# grouped by market rather than as a single market's listing. Kept distinct from
-# the MARKET_NAMES so it can sit above them in the nav.
+# Pinned pseudo-markets: pools that sit above the real markets in the nav.
+# "Interested" gathers every hand-tagged role; "Imported" gathers jobs added by
+# hand (source = "Manual import"). Both group their contents by market.
 INTERESTED_VIEW = "Interested"
+IMPORTED_VIEW = "Imported"
+PINNED_VIEWS = (INTERESTED_VIEW, IMPORTED_VIEW)
 
 init()
 st.set_page_config(page_title="Career Radar", page_icon=":material/radar:", layout="wide")
@@ -258,6 +261,11 @@ def interested_jobs():
     return [j for j in all_jobs() if (j["application_status"] or "") == "Interested"]
 
 
+def imported_jobs():
+    """Every hand-imported job (source = 'Manual import'), in DB order."""
+    return [j for j in all_jobs() if j["source"] == "Manual import"]
+
+
 def filtered_count(country):
     vals = filter_values(country)
     return sum(1 for j in market_jobs(country) if passes(j, *vals) is True)
@@ -398,21 +406,23 @@ def nav_css(selected):
 .st-key-nav_{name} button p {{ font-weight: {700 if sel else 600}; }}
 """)
 
-    star, on = "37,99,235", selected == INTERESTED_VIEW
-    rules.append(f"""
-.st-key-nav_interested button {{
-    background: rgba({star}, {0.24 if on else 0.10});
-    border-left: 4px solid rgb({star});
-    {f'box-shadow: inset 0 0 0 2px rgb({star});' if on else ''}
+    for key, rgb, view in (("interested", "37,99,235", INTERESTED_VIEW),
+                           ("imported", "22,163,74", IMPORTED_VIEW)):
+        on = selected == view
+        rules.append(f"""
+.st-key-nav_{key} button {{
+    background: rgba({rgb}, {0.24 if on else 0.10});
+    border-left: 4px solid rgb({rgb});
+    {f'box-shadow: inset 0 0 0 2px rgb({rgb});' if on else ''}
 }}
-.st-key-nav_interested button:hover {{ background: rgba({star}, {0.32 if on else 0.18}); }}
-.st-key-nav_interested button p {{ font-weight: {700 if on else 600}; }}
+.st-key-nav_{key} button:hover {{ background: rgba({rgb}, {0.32 if on else 0.18}); }}
+.st-key-nav_{key} button p {{ font-weight: {700 if on else 600}; }}
 """)
     return "<style>" + "\n".join(rules) + "</style>"
 
 
 def render_nav():
-    if st.session_state.get("market") not in (*MARKET_NAMES, INTERESTED_VIEW):
+    if st.session_state.get("market") not in (*MARKET_NAMES, *PINNED_VIEWS):
         st.session_state["market"] = MARKET_NAMES[0]
 
     st.markdown("#### Pinned")
@@ -423,6 +433,13 @@ def render_nav():
         width="stretch",
     ):
         st.session_state["market"] = INTERESTED_VIEW
+    if st.button(
+        f"Imported  ·  {len(imported_jobs())}",
+        key="nav_imported",
+        icon=":material/note_add:",
+        width="stretch",
+    ):
+        st.session_state["market"] = IMPORTED_VIEW
 
     st.markdown("#### Markets")
     for name in MARKET_NAMES:
@@ -572,16 +589,101 @@ def render_interested_pool(show_req=False):
             render_card(j, show_req)
 
 
+def _import_form():
+    """The 'add a job' form for the Imported pool. Paste text, or fetch a URL to
+    prefill, then pick a market and import. Rule-scored on save; picked up by the
+    next LLM scoring run regardless of score."""
+    seed = st.session_state.get("imp_seed", {})
+
+    with st.expander("Add a job", icon=":material/note_add:",
+                     expanded=not imported_jobs()):
+        url = st.text_input("Job URL", key="imp_url",
+                            placeholder="https://…  (optional — paste the text below instead)")
+        if st.button("Fetch details", icon=":material/download:", disabled=not url.strip()):
+            res = fetch_posting(url)
+            if res.get("error"):
+                st.warning(f"Couldn't fetch that page ({res['error']}). "
+                           "Paste the posting text instead.", icon=":material/warning:")
+            else:
+                st.session_state["imp_seed"] = res
+                st.rerun()
+
+        with st.form("import_job", border=False):
+            c1, c2 = st.columns([3, 2])
+            title = c1.text_input("Title", value=seed.get("title", ""))
+            company = c2.text_input("Company", value=seed.get("company", ""))
+            default_market = MARKET_NAMES.index("Remote") if "Remote" in MARKET_NAMES else 0
+            country = st.selectbox("Market", MARKET_NAMES, index=default_market,
+                                   format_func=lambda m: MARKET_LABELS[m])
+            description = st.text_area("Posting text", value=seed.get("description", ""),
+                                       height=220, placeholder="Paste the full job description here")
+            submitted = st.form_submit_button("Import job", icon=":material/add:", type="primary")
+
+        if submitted:
+            if not title.strip():
+                st.error("A title is required.")
+            else:
+                j = import_job(title=title, company=company, country=country,
+                               description=description, url=st.session_state.get("imp_url", ""))
+                save(j)
+                st.session_state.pop("imp_seed", None)
+                all_jobs.clear()
+                st.success(f"Imported **{j.title}** into {MARKET_LABELS[country]}. "
+                           "It'll get an AI verdict on the next scoring run.",
+                           icon=":material/check_circle:")
+                st.rerun()
+
+
+def render_imported_pool(show_req=False):
+    """The pinned 'Imported' pool: hand-added jobs, grouped by market. Ignores the
+    score / seniority / language filters - you imported these on purpose."""
+    st.badge("Imported", icon=":material/note_add:", color="green")
+    st.caption(
+        "Jobs you added by hand (from a link or pasted text), grouped by market. "
+        "Each is rule-scored on import and picked up by the next AI scoring run."
+    )
+
+    _import_form()
+
+    data = imported_jobs()
+    if not data:
+        return
+
+    groups = [(name, [j for j in data if j["country"] == name]) for name in MARKET_NAMES]
+    groups = [(name, js) for name, js in groups if js]
+    other = [j for j in data if j["country"] not in MARKET_NAMES]
+
+    summary = "  ·  ".join(f"{MARKET_LABELS[name]} {len(js)}" for name, js in groups)
+    if other:
+        summary += f"  ·  Other {len(other)}"
+    st.markdown(f"**{len(data)} imported job(s)** &nbsp;—&nbsp; {summary}")
+
+    for name, js in groups:
+        st.divider()
+        st.badge(f"{MARKET_LABELS[name]}  ·  {len(js)}", icon=MARKET_ICONS[name],
+                 color=MARKET_BADGE.get(name, "gray"))
+        for j in sorted(js, key=combined_score, reverse=True):
+            render_card(j, show_req)
+
+    if other:
+        st.divider()
+        st.badge(f"Other  ·  {len(other)}", icon=":material/help:", color="gray")
+        for j in sorted(other, key=combined_score, reverse=True):
+            render_card(j, show_req)
+
+
 st.title(":material/radar: Career Radar")
 
 main_col, aside_col = st.columns([3, 1], gap="large")
 
 with aside_col:
     market = render_nav()
-    active_filters = render_filters(market) if market != INTERESTED_VIEW else None
+    active_filters = render_filters(market) if market not in PINNED_VIEWS else None
 
 with main_col:
     if market == INTERESTED_VIEW:
         render_interested_pool()
+    elif market == IMPORTED_VIEW:
+        render_imported_pool()
     else:
         render_listing(market, *active_filters)

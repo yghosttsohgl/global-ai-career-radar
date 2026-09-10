@@ -48,11 +48,13 @@ def _system_prompt():
 
 
 def pending_jobs(limit=None):
-    """Jobs at/above RULE_SCORE_FLOOR that haven't been LLM-scored yet."""
+    """Jobs awaiting LLM scoring: at/above RULE_SCORE_FLOOR, or manually imported
+    (the user chose to import those, so they always get a verdict)."""
     init()
     c = con()
     rows = c.execute(
-        "SELECT * FROM jobs WHERE llm_score IS NULL AND rule_score >= ? ORDER BY rule_score DESC",
+        "SELECT * FROM jobs WHERE llm_score IS NULL "
+        "AND (rule_score >= ? OR source = 'Manual import') ORDER BY rule_score DESC",
         (RULE_SCORE_FLOOR,),
     ).fetchall()
     c.close()
